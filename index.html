@@ -86,7 +86,14 @@ li.done .t{color:var(--muted);text-decoration:line-through}
 .ask button.danger{color:var(--sun);border-color:var(--sun)}
 .empty-msg{color:var(--muted);font-size:14px;text-align:center;padding:12px 0;justify-content:center}
 .note{font-size:12px;color:var(--muted);text-align:center}
-.tools{display:flex;gap:8px;justify-content:center}
+.tools{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.head-right{display:flex;gap:6px;align-items:center}
+.remind{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--accent-soft);color:var(--fg);border-radius:12px;padding:8px 12px;font-size:13px}
+.remind span{flex:1;min-width:0}
+.remind button{border:none;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
+.remind .go{background:var(--accent);color:#fff;font-weight:600}
+.remind .later{background:none;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;max-width:calc(100% - 32px);text-align:center;z-index:20}
 .tools button,.restore{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
@@ -98,9 +105,17 @@ li.done .t{color:var(--muted);text-decoration:line-through}
       <h1 id="monthLabel">2026년 11월</h1>
       <button class="navbtn" id="next" aria-label="다음 달">›</button>
     </div>
-    <button class="today-btn" id="goToday">오늘</button>
+    <div class="head-right">
+      <button class="today-btn" id="goToday">오늘</button>
+      <button class="today-btn" id="more" aria-label="백업 메뉴" aria-expanded="false">⋯</button>
+    </div>
   </header>
 
+  <div class="remind" id="remind" hidden>
+    <span id="remindText">백업한 지 2주가 지났어요.</span>
+    <button type="button" class="go" id="remindGo">지금 백업</button>
+    <button type="button" class="later" id="remindLater">나중에</button>
+  </div>
   <section class="cal" aria-label="달력">
     <div class="dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
     <div class="grid" id="grid"></div>
@@ -130,7 +145,8 @@ li.done .t{color:var(--muted);text-decoration:line-through}
     <ul id="list"></ul>
   </section>
   <p class="note" id="status" hidden>불러오는 중…</p>
-  <div class="tools" hidden><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
+  <div class="toast" id="toast" hidden></div>
+  <div class="tools" id="tools" hidden><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
 </div>
 
 <script>
@@ -307,11 +323,38 @@ useLocal('이 핸드폰에만 저장돼요. 가끔 백업해 두세요.');
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 
 /* 백업 / 복원 */
-$('backup').onclick=()=>{
+const ls={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}}};
+let toastTimer;
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true;},3000);}
+
+/* 브라우저에 영구 저장 요청 (저장공간 부족 시 자동 삭제 방지) */
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(()=>{});}
+
+/* 백업 알림: 마지막 백업(또는 처음 사용) 후 14일이 지나면 표시 */
+const DAY=86400000;
+if(!ls.get('todo-firstUse')) ls.set('todo-firstUse',String(Date.now()));
+function hasData(){return routines.length>0||Object.values(days).some(d=>d.items&&d.items.length);}
+function checkRemind(){
+  const last=Number(ls.get('todo-lastBackup')||ls.get('todo-firstUse')||Date.now());
+  const snooze=Number(ls.get('todo-snooze')||0);
+  const t=Date.now(), passed=Math.floor((t-last)/DAY);
+  const show=hasData()&&passed>=14&&t>snooze;
+  $('remind').hidden=!show;
+  if(show) $('remindText').textContent=ls.get('todo-lastBackup')?'마지막 백업 후 '+passed+'일이 지났어요.':'아직 백업한 적이 없어요. 한 번 저장해 두세요.';
+}
+function doBackup(){
   const blob=new Blob([JSON.stringify({v:1,days,routines})],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='티끌모아-백업-'+TODAY+'.json';
   document.body.appendChild(a);a.click();a.remove();
-};
+  ls.set('todo-lastBackup',String(Date.now()));
+  checkRemind();
+  toast('백업 파일을 다운로드 폴더에 저장했어요.');
+}
+$('backup').onclick=doBackup;
+$('remindGo').onclick=doBackup;
+$('remindLater').onclick=()=>{ls.set('todo-snooze',String(Date.now()+3*DAY));checkRemind();};
+$('more').onclick=()=>{const open=$('tools').hidden;$('tools').hidden=!open;$('more').setAttribute('aria-expanded',open);if(open)$('tools').scrollIntoView({behavior:'smooth',block:'nearest'});};
+checkRemind();
 $('restoreFile').onchange=async e=>{
   const f=e.target.files[0]; if(!f) return;
   try{
@@ -319,8 +362,8 @@ $('restoreFile').onchange=async e=>{
     if(!x||typeof x.days!=='object'||!Array.isArray(x.routines)) throw 0;
     days=x.days; routines=x.routines; saveLocal();
     Object.values(days).forEach(d=>{d.items=d.items||[];d.rdone=d.rdone||{};d.skip=d.skip||[];});
-    $('status').textContent='백업을 불러왔어요.'; render();
-  }catch(err){$('status').textContent='백업 파일을 읽지 못했어요. 티끌모아에서 저장한 .json 파일인지 확인해 주세요.';}
+    toast('백업을 불러왔어요.'); render(); checkRemind();
+  }catch(err){toast('백업 파일을 읽지 못했어요. 티끌모아에서 저장한 .json 파일인지 확인해 주세요.');}
   e.target.value='';
 };
 </script>
