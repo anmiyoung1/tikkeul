@@ -125,7 +125,9 @@ li.shift{transition:transform .15s}
 .bp-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .bp-list li{display:flex;align-items:center;gap:8px;padding:6px 2px;border-top:1px solid var(--line);min-height:40px;box-sizing:border-box}
 .bp-list li:first-child{border-top:none}
-.bp-list .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.bp-list .nm{flex:1;min-width:0;overflow-wrap:anywhere;background:none;border:none;color:var(--fg);font:inherit;text-align:left;padding:4px 0;cursor:pointer}
+.bp-list li.editing{background:var(--bday-soft);border-radius:8px}
+.bp-cancel{height:40px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:0 12px;font:inherit;cursor:pointer}
 .bp-list .nx{color:var(--muted);font-size:12px;white-space:nowrap}
 .bp-list .empty{color:var(--muted);justify-content:center;border:none}
 .bp-form{display:flex;flex-direction:column;gap:8px}
@@ -240,9 +242,10 @@ li.shift{transition:transform .15s}
         </div>
         <select id="bdayM" aria-label="월"></select>
         <select id="bdayD" aria-label="일"></select>
-        <button type="submit" class="add">추가</button>
+        <button type="submit" class="add" id="bdaySubmit">추가</button>
+        <button type="button" class="bp-cancel" id="bdayCancelEdit" hidden>취소</button>
       </div>
-      <p class="bp-note" id="bdayNote">달력에 🎂로 표시돼요. 음력 생일은 해마다 양력 날짜를 계산해서 보여 줘요.</p>
+      <p class="bp-note" id="bdayNote">달력에 🎂로 표시돼요. 음력 생일은 해마다 양력 날짜를 계산해서 보여 줘요. 목록을 누르면 고칠 수 있어요.</p>
     </form>
   </div>
 </div>
@@ -635,7 +638,8 @@ function doBackup(){
 $('backup').onclick=doBackup;
 
 /* 생일 관리 */
-let bdayLunar=false;
+let bdayLunar=false, bdayEdit=null;
+const BDAY_NOTE='달력에 🎂로 표시돼요. 음력 생일은 해마다 양력 날짜를 계산해서 보여 줘요. 목록을 누르면 고칠 수 있어요.';
 function fillBdaySel(){
   const m=$('bdayM'), d=$('bdayD'), keepM=m.value, keepD=d.value;
   if(!m.options.length){for(let i=1;i<=12;i++){const o=document.createElement('option');o.value=i;o.textContent=i+'월';m.appendChild(o);}}
@@ -653,7 +657,9 @@ function drawBdays(){
   };
   bdays.map(b=>({b,n:next(b)})).sort((a,z)=>(a.n||'9')<(z.n||'9')?-1:1).forEach(({b,n})=>{
     const li=document.createElement('li');
-    const nm=document.createElement('span');nm.className='nm';nm.textContent='🎂 '+b.name+' ('+bdayDesc(b)+')';
+    if(bdayEdit===b) li.className='editing';
+    const nm=document.createElement('button');nm.type='button';nm.className='nm';nm.textContent='🎂 '+b.name+' ('+bdayDesc(b)+')';
+    nm.title='눌러서 고치기'; nm.onclick=()=>startBdayEdit(b);
     const nx=document.createElement('span');nx.className='nx';
     if(n){const dd=Math.round((parse(n)-parse(TODAY))/86400000);const nd=parse(n);nx.textContent=(dd===0?'오늘':'D-'+dd)+' · '+(nd.getMonth()+1)+'.'+nd.getDate();}
     const del=document.createElement('button');del.type='button';del.className='del';del.textContent='×';del.setAttribute('aria-label','삭제');
@@ -661,22 +667,39 @@ function drawBdays(){
     li.append(nm,nx,del); ul.appendChild(li);
   });
 }
-$('bdayCal').querySelectorAll('button').forEach(b=>b.onclick=()=>{
-  bdayLunar=b.dataset.l==='1';
-  $('bdayCal').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+function setBdayLunar(v){
+  bdayLunar=v;
+  $('bdayCal').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.l==='1')===v));
   fillBdaySel();
-});
+}
+$('bdayCal').querySelectorAll('button').forEach(b=>b.onclick=()=>setBdayLunar(b.dataset.l==='1'));
+function startBdayEdit(b){
+  bdayEdit=b;
+  $('bdayName').value=b.name; setBdayLunar(!!b.lunar);
+  $('bdayM').value=b.m; fillBdaySel(); $('bdayD').value=b.d;
+  $('bdaySubmit').textContent='수정'; $('bdayCancelEdit').hidden=false;
+  $('bdayNote').textContent=b.name+' 생일을 고치는 중이에요. 다 고치고 수정을 누르세요.';
+  drawBdays(); $('bdayName').focus();
+}
+function endBdayEdit(){
+  bdayEdit=null; $('bdayName').value='';
+  $('bdaySubmit').textContent='추가'; $('bdayCancelEdit').hidden=true; $('bdayNote').textContent=BDAY_NOTE;
+  drawBdays();
+}
+$('bdayCancelEdit').onclick=endBdayEdit;
 $('bdayM').onchange=fillBdaySel;
 $('bdayOpen').onclick=()=>{fillBdaySel();drawBdays();$('bdayPanel').hidden=false;$('bdayPanel').scrollIntoView({behavior:'smooth',block:'nearest'});};
-$('bdayClose').onclick=()=>{$('bdayPanel').hidden=true;};
+$('bdayClose').onclick=()=>{endBdayEdit();$('bdayPanel').hidden=true;};
 $('bdayForm').addEventListener('submit',e=>{
   e.preventDefault();
   const name=$('bdayName').value.trim();
   if(!name){$('bdayNote').textContent='이름을 적어 주세요.';return;}
   if(bdayLunar&&!LUNAR){$('bdayNote').textContent='음력 계산 파일을 불러오지 못했어요. 인터넷에 연결된 상태로 앱을 다시 열어 주세요.';return;}
-  bdays.push({id:uid6(),name,m:+$('bdayM').value,d:+$('bdayD').value,lunar:bdayLunar});
-  $('bdayName').value='';$('bdayNote').textContent='달력에 🎂로 표시돼요. 음력 생일은 해마다 양력 날짜를 계산해서 보여 줘요.';
-  saveLocal();drawBdays();render();
+  const val={name,m:+$('bdayM').value,d:+$('bdayD').value,lunar:bdayLunar};
+  const editing=bdayEdit;
+  if(editing){Object.assign(editing,val);} else bdays.push({id:uid6(),...val});
+  saveLocal(); endBdayEdit(); render();
+  if(editing&&typeof toast==='function') toast(name+' 생일을 고쳤어요.');
 });
 
 /* 날짜 이후 삭제 */
