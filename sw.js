@@ -1,5 +1,5 @@
-const CACHE='tikkeul-v3';
-const FILES=['./','index.html','manifest.json','icon-192.png','icon-512.png'];
+const CACHE='tikkeul-v4';
+const FILES=['./','index.html','lunar.js','guide.html','manifest.json','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{
