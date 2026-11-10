@@ -99,6 +99,8 @@ li.dragging{position:relative;z-index:5;background:var(--surface);box-shadow:0 6
 li.shift{transition:transform .15s}
 .impdot{position:absolute;top:4px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--imp)}
 .tag{flex:none;font-size:11px;font-weight:500;color:var(--rep);background:var(--rep-soft);border-radius:6px;padding:0 6px;white-space:nowrap}
+.impmark{color:var(--imp);margin-right:4px}
+.ask .star-btn{color:var(--imp);border-color:var(--imp)}
 .del.armed{background:var(--imp-soft);color:var(--imp);font-weight:700}
 .ask-hint{font-size:12px;color:var(--muted)}
 .del{background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;width:28px;height:28px;border-radius:7px;flex:none}
@@ -365,17 +367,19 @@ function item(o){
   const lb=document.createElement('label');
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=o.done;cb.id='cb-'+o.id;
   cb.onchange=()=>o.onCheck(cb.checked);
-  const s=document.createElement('span');s.className='t';s.textContent=o.text;
+  const s=document.createElement('span');s.className='t';
+  if(o.imp){const m=document.createElement('span');m.className='impmark';m.textContent='★';m.setAttribute('aria-label','꼭 할 일');s.appendChild(m);}
+  s.append(o.text);
   lb.append(cb,s); li.appendChild(lb);
   if(o.tag){const g=document.createElement('span');g.className='tag';g.textContent=o.tag;li.appendChild(g);}
-  const st=document.createElement('button');st.type='button';st.className='star';st.textContent=o.imp?'★':'☆';
-  st.setAttribute('aria-pressed',!!o.imp);st.setAttribute('aria-label','꼭 할 일 표시');st.title='꼭 할 일';
-  st.onclick=o.onStar; li.appendChild(st);
   const del=document.createElement('button');del.type='button';del.className='del'+(o.ask?' armed':'');del.textContent='×';
   del.setAttribute('aria-label',o.ask?'한 번 더 누르면 삭제':'삭제');del.title=o.ask?'한 번 더 누르면 삭제':'삭제';
   del.onclick=o.onDel; li.appendChild(del);
   if(o.ask){
     const a=document.createElement('div');a.className='ask';
+    const sb=document.createElement('button');sb.type='button';sb.className='star-btn';sb.textContent=o.imp?'☆ 꼭 할 일 해제':'★ 꼭 할 일';
+    sb.onclick=()=>{asking=null;o.onStar();};
+    a.append(sb);
     if(o.ask.it){
       const b1=document.createElement('button');b1.type='button';b1.textContent='내일로 넘기기';
       b1.onclick=()=>{asking=null;carryOver(o.ask.it);};
