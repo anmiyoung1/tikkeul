@@ -18,18 +18,18 @@
 :root{
   --bg:#f3f5f7; --surface:#ffffff; --line:#dde3e8; --fg:#18232c; --muted:#66727d;
   --accent:#1f7a6d; --accent-soft:#d6ece8; --done:#2e9e5b; --warn:#c98a1b; --sun:#c4473a; --sat:#2f63b8;
-  --rep:#6a55b5; --rep-soft:#ebe6f8; --stamp:#d43d3d;
+  --rep:#6a55b5; --rep-soft:#ebe6f8; --stamp:#d43d3d; --imp:#e8473a; --imp-soft:#fdecea;
   --display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
   --body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#11181d; --surface:#1a232a; --line:#2b3740; --fg:#e6edf1; --muted:#93a1ab;
   --accent:#4fbfae; --accent-soft:#1d3a36; --done:#4cc27e; --warn:#e0a640; --sun:#ef7a6c; --sat:#7ea6ec;
-  --rep:#b4a3f0; --rep-soft:#2c2745; --stamp:#ff7070; color-scheme:dark}}
+  --rep:#b4a3f0; --rep-soft:#2c2745; --stamp:#ff7070; --imp:#ff6b5e; --imp-soft:#3a2522; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#11181d; --surface:#1a232a; --line:#2b3740; --fg:#e6edf1; --muted:#93a1ab;
   --accent:#4fbfae; --accent-soft:#1d3a36; --done:#4cc27e; --warn:#e0a640; --sun:#ef7a6c; --sat:#7ea6ec;
-  --rep:#b4a3f0; --rep-soft:#2c2745; --stamp:#ff7070; color-scheme:dark}
+  --rep:#b4a3f0; --rep-soft:#2c2745; --stamp:#ff7070; --imp:#ff6b5e; --imp-soft:#3a2522; color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:560px;margin:0 auto;padding-block:12px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:10px}
 header{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -89,6 +89,15 @@ li:first-child{border-top:none}
 li label{flex:1;min-width:0;display:flex;align-items:center;gap:10px;cursor:pointer;overflow-wrap:anywhere}
 li input[type=checkbox]{width:19px;height:19px;margin:0;accent-color:var(--done);flex:none}
 li.done .t{color:var(--muted);text-decoration:line-through}
+li.imp{background:var(--imp-soft);border-radius:8px;margin:1px 0}
+li.imp .t{font-weight:600}
+li.imp.done .t{font-weight:400}
+.grip{flex:none;width:22px;height:28px;display:grid;place-items:center;color:var(--muted);opacity:.55;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;font-size:15px;letter-spacing:-1px}
+.star{background:none;border:none;color:var(--muted);opacity:.45;font-size:18px;line-height:1;cursor:pointer;width:28px;height:28px;border-radius:7px;flex:none;padding:0}
+.star[aria-pressed="true"]{color:var(--imp);opacity:1}
+li.dragging{position:relative;z-index:5;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:8px;transition:none}
+li.shift{transition:transform .15s}
+.impdot{position:absolute;top:4px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--imp)}
 .tag{flex:none;font-size:11px;font-weight:500;color:var(--rep);background:var(--rep-soft);border-radius:6px;padding:0 6px;white-space:nowrap}
 .del{background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;width:28px;height:28px;border-radius:7px;flex:none}
 .del:hover{background:var(--bg);color:var(--sun)}
@@ -197,7 +206,7 @@ let mode='once', pickWd=[];
 let asking=null;  // 삭제 확인 중인 반복 id
 const $=id=>document.getElementById(id);
 
-const dayRec=k=>days[k]||(days[k]={items:[],rdone:{},skip:[]});
+const dayRec=k=>{const d=days[k]||(days[k]={items:[],rdone:{},skip:[]});d.rimp=d.rimp||{};d.order=d.order||[];return d;};
 function routinesFor(k){
   const w=parse(k).getDay(), skip=(days[k]&&days[k].skip)||[];
   return routines.filter(r=>r.wd.includes(w)&&k>=r.start&&(!r.end||k<=r.end)&&!skip.includes(r.id));
@@ -206,7 +215,8 @@ function tally(k){
   const d=days[k]||{items:[],rdone:{}}, rs=routinesFor(k);
   const total=rs.length+d.items.length;
   const done=rs.filter(r=>d.rdone&&d.rdone[r.id]).length+d.items.filter(x=>x.done).length;
-  return {total,done,rs,d};
+  const impLeft=rs.some(r=>d.rimp&&d.rimp[r.id]&&!(d.rdone&&d.rdone[r.id]))||d.items.some(x=>x.imp&&!x.done);
+  return {total,done,rs,d,impLeft};
 }
 function label(wd){
   const s=[...wd].sort().join('');
@@ -240,6 +250,7 @@ function render(){
       b.classList.add('stamped');
       const s=document.createElement('span');s.className='stamp';s.innerHTML=STAMP;b.appendChild(s);
     } else if(t.total){
+      if(t.impLeft){const dot=document.createElement('span');dot.className='impdot';dot.title='꼭 할 일 남음';b.appendChild(dot);}
       const c=document.createElement('span');
       c.className='cnt '+(t.done===t.total?'full':t.done>0?'part':'')+(k>TODAY?' future':'');
       c.textContent=t.done+'/'+t.total;b.appendChild(c);
@@ -260,28 +271,81 @@ function render(){
   $('barFill').style.width=t.total?(t.done/t.total*100)+'%':'0';
   const ul=$('list'); ul.innerHTML='';
   if(!t.total){const p=document.createElement('li');p.className='empty-msg';p.textContent='이 날은 할 일이 없어요. 위 칸에 적어서 추가해 보세요.';ul.appendChild(p);}
+  const rows=[];
   t.rs.forEach(r=>{
     const done=!!(t.d.rdone&&t.d.rdone[r.id]);
-    ul.appendChild(item('r-'+r.id,r.text,done,label(r.wd),
-      v=>{const d=dayRec(sel);d.rdone=d.rdone||{};if(v)d.rdone[r.id]=true;else delete d.rdone[r.id];saveDay(sel);},
+    const imp=!!(t.d.rimp&&t.d.rimp[r.id]);
+    rows.push({key:'r:'+r.id,el:item('r-'+r.id,r.text,done,label(r.wd),
+      v=>{const d=dayRec(sel);if(v)d.rdone[r.id]=true;else delete d.rdone[r.id];saveDay(sel);},
       ()=>{asking=asking===r.id?null:r.id;render();},
-      asking===r.id?r:null));
+      asking===r.id?r:null,imp,
+      ()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else d.rimp[r.id]=true;saveDay(sel);})});
   });
   t.d.items.forEach(it=>{
-    ul.appendChild(item('i-'+it.id,it.text,!!it.done,null,
+    rows.push({key:'i:'+it.id,el:item('i-'+it.id,it.text,!!it.done,null,
       v=>{it.done=v;saveDay(sel);},
-      ()=>{dayRec(sel).items=t.d.items.filter(x=>x!==it);saveDay(sel);}));
+      ()=>{dayRec(sel).items=t.d.items.filter(x=>x!==it);saveDay(sel);},null,!!it.imp,
+      ()=>{it.imp=!it.imp;saveDay(sel);})});
+  });
+  const ord=(t.d.order)||[];
+  rows.forEach((r,i)=>{const p=ord.indexOf(r.key);r.pos=p<0?1e6+i:p;});
+  rows.sort((a,b)=>a.pos-b.pos);
+  rows.forEach(r=>{r.el.dataset.key=r.key;ul.appendChild(r.el);});
+  enableDrag(ul);
+}
+
+/* 끌어서 순서 바꾸기 (≡ 손잡이) */
+function enableDrag(ul){
+  ul.querySelectorAll('.grip').forEach(g=>{
+    g.addEventListener('pointerdown',e=>{
+      const li=g.closest('li'); if(!li) return;
+      e.preventDefault();
+      try{g.setPointerCapture(e.pointerId);}catch(err){}
+      const rows=[...ul.querySelectorAll('li[data-key]')];
+      const from=rows.indexOf(li); let to=from;
+      const mids=rows.map(r=>{const b=r.getBoundingClientRect();return b.top+b.height/2;});
+      const h=li.getBoundingClientRect().height, startY=e.clientY;
+      li.classList.add('dragging');
+      rows.forEach(r=>{if(r!==li)r.classList.add('shift');});
+      const move=ev=>{
+        const dy=ev.clientY-startY, y=mids[from]+dy;
+        li.style.transform='translateY('+dy+'px)';
+        to=rows.filter((r,i)=>i!==from&&mids[i]<y).length;
+        rows.forEach((r,i)=>{
+          if(i===from) return;
+          let s=0;
+          if(from<to&&i>from&&i<=to) s=-h;
+          if(to<from&&i>=to&&i<from) s=h;
+          r.style.transform=s?'translateY('+s+'px)':'';
+        });
+      };
+      const up=()=>{
+        g.removeEventListener('pointermove',move);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);
+        rows.forEach(r=>{r.style.transform='';r.classList.remove('shift','dragging');});
+        if(to!==from){
+          const keys=rows.map(r=>r.dataset.key);
+          const [k]=keys.splice(from,1); keys.splice(to,0,k);
+          dayRec(sel).order=keys; saveDay(sel);
+        }
+      };
+      g.addEventListener('pointermove',move);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up);
+    });
   });
 }
 
-function item(id,text,done,tag,onCheck,onDel,ask){
-  const li=document.createElement('li'); if(done) li.className='done';
+function item(id,text,done,tag,onCheck,onDel,ask,imp,onStar){
+  const li=document.createElement('li'); li.className=(done?'done ':'')+(imp?'imp':'');
+  const gr=document.createElement('span');gr.className='grip';gr.textContent='≡';gr.setAttribute('aria-label','끌어서 순서 바꾸기');gr.title='끌어서 순서 바꾸기';
+  li.appendChild(gr);
   const lb=document.createElement('label');
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=done;cb.id='cb-'+id;
   cb.onchange=()=>onCheck(cb.checked);
   const s=document.createElement('span');s.className='t';s.textContent=text;
   lb.append(cb,s); li.appendChild(lb);
   if(tag){const g=document.createElement('span');g.className='tag';g.textContent=tag;li.appendChild(g);}
+  const st=document.createElement('button');st.type='button';st.className='star';st.textContent=imp?'★':'☆';
+  st.setAttribute('aria-pressed',!!imp);st.setAttribute('aria-label','꼭 할 일 표시');st.title='꼭 할 일';
+  st.onclick=onStar; li.appendChild(st);
   const del=document.createElement('button');del.className='del';del.textContent='×';del.setAttribute('aria-label','삭제');
   del.onclick=onDel; li.appendChild(del);
   if(ask){
@@ -350,8 +414,8 @@ function saveLocal(){try{localStorage.setItem('todo-days',JSON.stringify(days));
 function saveDay(k){
   render();
   const d=days[k]||{items:[],rdone:{},skip:[]};
-  const body={date:k,items:d.items.map(x=>({id:x.id,text:x.text,done:!!x.done})),rdone:{...(d.rdone||{})},skip:[...(d.skip||[])]};
-  const emptyDay=!body.items.length&&!Object.keys(body.rdone).length&&!body.skip.length;
+  const body={date:k,items:d.items.map(x=>({id:x.id,text:x.text,done:!!x.done,imp:!!x.imp})),rdone:{...(d.rdone||{})},skip:[...(d.skip||[])],rimp:{...(d.rimp||{})},order:[...(d.order||[])]};
+  const emptyDay=!body.items.length&&!Object.keys(body.rdone).length&&!body.skip.length&&!Object.keys(body.rimp).length;
   if(!col){saveLocal();return;}
   writing=writing.then(()=>emptyDay?col.doc('d'+k).delete():col.doc('d'+k).set(body)).catch(fail);
 }
