@@ -199,13 +199,13 @@ li.shift{transition:transform .15s}
   </section>
   <p class="note" id="status" hidden>불러오는 중…</p>
   <div class="toast" id="toast" hidden></div>
-  <div class="tools" id="tools" hidden><button type="button" id="purgeOpen">날짜 이후 삭제</button><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
+  <div class="tools" id="tools" hidden><button type="button" id="purgeOpen">일정 비우기</button><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
   <div class="purge" id="purge" hidden>
-    <label for="purgeDate">이 날짜부터 이후의 할 일을 모두 지워요</label>
+    <label for="purgeDate">이 날짜부터 이후 일정을 모두 비워요</label>
     <input type="date" id="purgeDate">
     <p id="purgeInfo"></p>
     <div class="purge-btns">
-      <button type="button" class="danger" id="purgeGo">삭제</button>
+      <button type="button" class="danger" id="purgeGo">비우기</button>
       <button type="button" id="purgeCancel">취소</button>
     </div>
   </div>
@@ -592,7 +592,7 @@ $('purgeGo').onclick=()=>{
   routines.forEach(r=>{if(!r.end||r.end>=from) r.end=addDays(from,-1);});
   saveLocal(); asking=null; render(); checkRemind();
   $('purge').hidden=true;
-  toast('지웠어요. 한번 할 일 '+p.items+'개, 반복 '+p.rStop.length+'개 정리');
+  toast('일정을 비웠어요. 한번 할 일 '+p.items+'개, 반복 '+p.rStop.length+'개 정리');
 };
 $('remindGo').onclick=doBackup;
 $('remindLater').onclick=()=>{ls.set('todo-snooze',String(Date.now()+3*DAY));checkRemind();};
