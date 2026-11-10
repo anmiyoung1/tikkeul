@@ -59,7 +59,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .big-stamp.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{0%{transform:rotate(-30deg) scale(1.8);opacity:0}100%{transform:rotate(-12deg) scale(1);opacity:1}}
 .panel-head{position:relative}
-.panel-left{display:flex;flex-direction:column;gap:2px;min-width:0}
+.panel-left{display:flex;flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:6px;min-width:0;padding-right:56px}
 .day.empty{visibility:hidden}
 .cnt{font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted);line-height:1;padding:2px 4px;border-radius:6px}
 .cnt.part{color:var(--warn)}
@@ -148,7 +148,7 @@ li.done .t{color:var(--muted);text-decoration:line-through}
     <div class="panel-head">
       <div class="panel-left">
         <h2 id="dayLabel">11월 10일 화요일</h2>
-        <span class="score" id="score">0 / 0 완료</span>
+        <span class="score" id="score">(0 / 0 완료)</span>
       </div>
       <div class="big-stamp" id="bigStamp" hidden></div>
     </div>
@@ -251,7 +251,7 @@ function render(){
   $('dayLabel').textContent=(sd.getMonth()+1)+'월 '+sd.getDate()+'일 '+WD[sd.getDay()]+'요일';
   if(HOL[sel]){const h=document.createElement('span');h.className='hol-name';h.textContent=HOL[sel];$('dayLabel').appendChild(h);}
   const t=tally(sel);
-  $('score').textContent=t.done+' / '+t.total+' 완료';
+  $('score').textContent='('+t.done+' / '+t.total+' 완료)';
   const allDone=t.total>0&&t.done===t.total&&sel<=TODAY, bs=$('bigStamp');
   if(!bs.innerHTML) bs.innerHTML=STAMP;
   bs.hidden=!allDone;
