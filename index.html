@@ -33,11 +33,11 @@
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:560px;margin:0 auto;padding-block:12px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:10px}
 header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-h1{font-family:var(--display);font-weight:400;font-size:22px;margin:0;letter-spacing:.5px}
+h1{font-family:var(--display);font-weight:400;font-size:22px;white-space:nowrap;margin:0;letter-spacing:.5px}
 .navbtn{background:var(--surface);border:1px solid var(--line);color:var(--fg);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.month{display:flex;align-items:center;gap:8px}
-.today-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:4px 12px;font:inherit;font-size:13px;cursor:pointer}
+.month{display:flex;align-items:center;gap:6px;min-width:0}
+.today-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:4px 10px;white-space:nowrap;flex:none;font:inherit;font-size:13px;cursor:pointer}
 .cal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 6px 4px}
 .dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px 2px}
 .dow div{text-align:center;font-size:11px;color:var(--muted);padding:2px 0;letter-spacing:.05em}
@@ -136,6 +136,7 @@ li.shift{transition:transform .15s}
       <button class="navbtn" id="next" aria-label="다음 달">›</button>
     </div>
     <div class="head-right">
+      <button class="today-btn" id="modeBtn">주간</button>
       <button class="today-btn" id="goToday">오늘</button>
       <button class="today-btn" id="more" aria-label="백업 메뉴" aria-expanded="false">⋯</button>
     </div>
@@ -203,6 +204,7 @@ const uid6=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const now=new Date(), TODAY=key(now);
 let view=new Date(now.getFullYear(),now.getMonth(),1);
 let sel=TODAY;
+let calMode='month';
 let days={};      // { "2026-11-10": {items:[{id,text,done}], rdone:{rid:true}, skip:[rid]} }
 let routines=[];  // [{id,text,wd:[0..6],start,end}]
 let col=null;
@@ -240,12 +242,23 @@ function stampSVG(){
 const STAMP=stampSVG();
 let lastSelDone=null;
 function render(){
-  $('monthLabel').textContent=view.getFullYear()+'년 '+(view.getMonth()+1)+'월';
   const g=$('grid'); g.innerHTML='';
-  const first=view.getDay(), last=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
-  for(let i=0;i<first;i++){const e=document.createElement('div');e.className='day empty';g.appendChild(e);}
-  for(let d=1;d<=last;d++){
-    const dt=new Date(view.getFullYear(),view.getMonth(),d), k=key(dt), t=tally(k);
+  let cells=[];
+  if(calMode==='week'){
+    const ws=addDays(sel,-parse(sel).getDay());
+    for(let i=0;i<7;i++) cells.push(parse(addDays(ws,i)));
+    const a=cells[0], z=cells[6];
+    $('monthLabel').textContent=a.getMonth()===z.getMonth()?(a.getMonth()+1)+'월 '+a.getDate()+'~'+z.getDate()+'일':(a.getMonth()+1)+'/'+a.getDate()+'~'+(z.getMonth()+1)+'/'+z.getDate();
+  } else {
+    $('monthLabel').textContent=view.getFullYear()+'년 '+(view.getMonth()+1)+'월';
+    const first=view.getDay(), last=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
+    for(let i=0;i<first;i++){const e=document.createElement('div');e.className='day empty';g.appendChild(e);}
+    for(let d=1;d<=last;d++) cells.push(new Date(view.getFullYear(),view.getMonth(),d));
+  }
+  $('modeBtn').textContent=calMode==='week'?'월간':'주간';
+  $('modeBtn').setAttribute('aria-label',calMode==='week'?'한 달 보기':'한 주 보기');
+  for(const dt of cells){
+    const d=dt.getDate(), k=key(dt), t=tally(k);
     const b=document.createElement('button');
     b.className='day'+(dt.getDay()===0?' sun':'')+(dt.getDay()===6?' sat':'')+(HOL[k]?' hol':'')+(k===TODAY?' today':'')+(k===sel?' sel':'');
     b.setAttribute('aria-label',(dt.getMonth()+1)+'월 '+d+'일');
@@ -259,7 +272,7 @@ function render(){
       c.className='cnt '+(t.done===t.total?'full':t.done>0?'part':'')+(k>TODAY?' future':'');
       c.textContent=t.done+'/'+t.total;b.appendChild(c);
     }
-    b.onclick=()=>{sel=k;asking=null;lastSelDone=null;syncWd();render();};
+    b.onclick=()=>{sel=k;view=new Date(dt.getFullYear(),dt.getMonth(),1);asking=null;lastSelDone=null;syncWd();render();};
     g.appendChild(b);
   }
   const sd=parse(sel);
@@ -435,8 +448,18 @@ $('addForm').addEventListener('submit',e=>{
     $('newTask').value=''; saveRoutines();
   }
 });
-$('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);render();};
-$('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render();};
+function moveBy(n){
+  if(calMode==='week'){sel=addDays(sel,7*n);const d=parse(sel);view=new Date(d.getFullYear(),d.getMonth(),1);asking=null;lastSelDone=null;}
+  else view=new Date(view.getFullYear(),view.getMonth()+n,1);
+  render();
+}
+$('prev').onclick=()=>moveBy(-1);
+$('next').onclick=()=>moveBy(1);
+$('modeBtn').onclick=()=>{
+  calMode=calMode==='week'?'month':'week';
+  if(calMode==='month'){const d=parse(sel);view=new Date(d.getFullYear(),d.getMonth(),1);}
+  render();
+};
 $('goToday').onclick=()=>{view=new Date(now.getFullYear(),now.getMonth(),1);sel=TODAY;asking=null;render();};
 
 /* 저장 */
