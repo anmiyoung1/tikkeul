@@ -119,8 +119,13 @@ li.shift{transition:transform .15s}
 .cake{position:absolute;top:2px;left:3px;font-size:10px;line-height:1}
 .bday-line{display:flex;flex-direction:column;gap:2px;background:var(--bday-soft);border-radius:8px;padding:6px 10px;font-size:14px;font-weight:600;color:var(--bday)}
 .bday-line small{font-weight:400;color:var(--muted);font-size:12px}
+.tools .bday-btn{background:var(--bday-soft);border-color:var(--bday);color:var(--bday);font-weight:600}
+.tools .bday-btn span{display:inline-block;transform-origin:50% 90%}
+.tools .bday-btn:hover span{animation:wiggle .5s ease-in-out}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
 .bday-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;font-size:14px}
 .bp-head{display:flex;justify-content:space-between;align-items:center}
+.bp-head b{color:var(--bday)}
 .bp-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;width:32px;height:32px}
 .bp-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .bp-list li{display:flex;align-items:center;gap:8px;padding:6px 2px;border-top:1px solid var(--line);min-height:40px;box-sizing:border-box}
@@ -158,7 +163,7 @@ li.shift{transition:transform .15s}
 .remind .later{background:none;color:var(--muted)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;max-width:calc(100% - 32px);text-align:center;z-index:20}
 .tools button,.restore{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
-@media (prefers-reduced-motion:reduce){.grid.slide-l,.grid.slide-r{animation:none}.bar i{transition:none}.big-stamp.pop{animation:none}}
+@media (prefers-reduced-motion:reduce){.tools .bday-btn:hover span{animation:none}.grid.slide-l,.grid.slide-r{animation:none}.bar i{transition:none}.big-stamp.pop{animation:none}}
 </style>
 </head><body>
 <div class="wrap">
@@ -220,7 +225,7 @@ li.shift{transition:transform .15s}
   </section>
   <p class="note" id="status" hidden>불러오는 중…</p>
   <div class="toast" id="toast" hidden></div>
-  <div class="tools" id="tools" hidden><button type="button" id="bdayOpen">생일</button><button type="button" id="purgeOpen">할 일 비우기</button><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
+  <div class="tools" id="tools" hidden><button type="button" id="bdayOpen" class="bday-btn"><span aria-hidden="true">🎂</span> 생일</button><button type="button" id="purgeOpen">할 일 비우기</button><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
   <div class="purge" id="purge" hidden>
     <label for="purgeDate">이 날짜부터 이후 할 일을 모두 비워요</label>
     <input type="date" id="purgeDate">
@@ -231,7 +236,7 @@ li.shift{transition:transform .15s}
     </div>
   </div>
   <div class="bday-panel" id="bdayPanel" hidden>
-    <div class="bp-head"><b>생일</b><button type="button" class="bp-close" id="bdayClose" aria-label="닫기">×</button></div>
+    <div class="bp-head"><b>🎂 생일</b><button type="button" class="bp-close" id="bdayClose" aria-label="닫기">×</button></div>
     <ul class="bp-list" id="bdayList"></ul>
     <form class="bp-form" id="bdayForm">
       <input id="bdayName" type="text" placeholder="이름 (예: 엄마)" maxlength="30" autocomplete="off">
