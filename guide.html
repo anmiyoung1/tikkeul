@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f7a6d">
+<title>티끌모아 설치 방법</title>
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Do+Hyeon&display=swap">
+<style>
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --line:#dde3e8; --fg:#18232c; --muted:#66727d;
+  --accent:#1f7a6d; --accent-soft:#d6ece8; --hi:#e8473a;
+  --display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#11181d;--surface:#1a232a;--line:#2b3740;--fg:#e6edf1;--muted:#93a1ab;--accent:#4fbfae;--accent-soft:#1d3a36;--hi:#ff6b5e;color-scheme:dark}}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:560px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;gap:12px}
+.top img{width:52px;height:52px;border-radius:12px}
+h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1.2}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{flex:1;border:none;background:none;color:var(--muted);font:inherit;font-weight:600;padding:8px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:#fff}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}
+.step svg{width:100%;height:auto;display:block}
+.num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:600;margin-right:6px}
+.step h2{font-size:16px;margin:0 0 6px;display:flex;align-items:center;font-weight:600}
+.step p{margin:0;color:var(--muted);font-size:14px}
+.step p b{color:var(--fg)}
+.done{background:var(--accent-soft);border-radius:14px;padding:14px;font-size:14px}
+.go{display:block;text-align:center;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;border-radius:12px;padding:12px}
+.note{font-size:12px;color:var(--muted);text-align:center}
+@media (max-width:420px){.step{grid-template-columns:118px 1fr;gap:12px;padding:12px}}
+</style>
+</head><body>
+<div class="wrap">
+  <div class="top">
+    <img src="icon-192.png" alt="">
+    <div><h1>티끌모아 설치 방법</h1><p class="sub">그림의 <b style="color:var(--hi)">빨간 동그라미</b>를 누르면 돼요. 로그인은 필요 없어요.</p></div>
+  </div>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tA" aria-selected="true">안드로이드 (갤럭시)</button>
+    <button role="tab" id="tI" aria-selected="false">아이폰</button>
+  </div>
+  <div id="steps"></div>
+  <div class="done">✔ 홈 화면에 <b>티끌모아</b> 아이콘이 생기면 끝이에요. 다음부터는 링크 대신 <b>아이콘으로 여세요.</b><br>할 일 기록은 내 핸드폰에만 저장돼요.</div>
+  <a class="go" href="./">티끌모아 열기</a>
+  <p class="note">https://anmiyoung1.github.io/tikkeul/</p>
+</div>
+<script>
+const C={frame:'#2a333b',screen:'#ffffff',bar:'#eef1f4',ink:'#5d6974',acc:'#1f7a6d',hi:'#e8473a',menu:'#ffffff',kakao:'#fee500'};
+// 공통: 핸드폰 틀 + 앱 화면(작은 달력)
+function phone(inner){
+  return '<svg viewBox="0 0 150 270" role="img"><rect x="3" y="3" width="144" height="264" rx="20" fill="'+C.frame+'"/>'+
+  '<rect x="9" y="9" width="132" height="252" rx="15" fill="'+C.screen+'"/>'+inner+'</svg>';
+}
+function appBody(y){
+  let s='<text x="20" y="'+(y+14)+'" font-size="10" font-weight="700" fill="#18232c" font-family="Do Hyeon,sans-serif">2026년 11월</text>';
+  for(let r=0;r<5;r++)for(let c=0;c<7;c++){
+    s+='<rect x="'+(18+c*17)+'" y="'+(y+24+r*16)+'" width="11" height="8" rx="2" fill="'+(r===1&&c===2?C.acc:'#dfe5ea')+'"/>';
+  }
+  s+='<rect x="18" y="'+(y+110)+'" width="114" height="12" rx="3" fill="#dfe5ea"/>';
+  s+='<rect x="18" y="'+(y+128)+'" width="90" height="8" rx="2" fill="#e8ecef"/><rect x="18" y="'+(y+142)+'" width="100" height="8" rx="2" fill="#e8ecef"/>';
+  return s;
+}
+const ring=(cx,cy,r)=>'<circle cx="'+cx+'" cy="'+cy+'" r="'+(r||11)+'" fill="none" stroke="'+C.hi+'" stroke-width="3"/>';
+const hand=(x,y)=>'<g transform="translate('+x+' '+y+')"><path d="M0 0 l10 22 l3 -8 l9 -2 z" fill="'+C.hi+'" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></g>';
+function menu(x,y,w,items,hiIdx){
+  let s='<rect x="'+(x+2)+'" y="'+(y+3)+'" width="'+w+'" height="'+(items.length*20+8)+'" rx="7" fill="#000" opacity=".12"/>';
+  s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(items.length*20+8)+'" rx="7" fill="'+C.menu+'" stroke="#d5dce2"/>';
+  items.forEach((t,i)=>{
+    const yy=y+4+i*20;
+    if(i===hiIdx) s+='<rect x="'+(x+3)+'" y="'+yy+'" width="'+(w-6)+'" height="20" rx="5" fill="#fde6e3" stroke="'+C.hi+'" stroke-width="2"/>';
+    s+='<text x="'+(x+9)+'" y="'+(yy+14)+'" font-size="9.5" fill="'+(i===hiIdx?C.hi:'#33404b')+'" font-weight="'+(i===hiIdx?700:400)+'" font-family="IBM Plex Sans KR,sans-serif">'+t+'</text>';
+  });
+  return s;
+}
+function popup(title,btn){
+  return '<rect x="9" y="9" width="132" height="252" rx="15" fill="#000" opacity=".35"/>'+
+  '<rect x="16" y="168" width="118" height="86" rx="10" fill="#fff"/>'+
+  '<image href="icon-192.png" x="24" y="178" width="22" height="22"/>'+
+  '<text x="52" y="188" font-size="10" font-weight="700" fill="#18232c" font-family="IBM Plex Sans KR,sans-serif">'+title+'</text>'+
+  '<text x="52" y="200" font-size="8" fill="#66727d" font-family="IBM Plex Sans KR,sans-serif">anmiyoung1.github.io</text>'+
+  '<rect x="78" y="222" width="48" height="22" rx="11" fill="'+C.acc+'"/>'+
+  '<text x="102" y="237" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="IBM Plex Sans KR,sans-serif">'+btn+'</text>'+
+  '<text x="58" y="237" text-anchor="middle" font-size="10" fill="#66727d" font-family="IBM Plex Sans KR,sans-serif">취소</text>'+
+  '<circle cx="102" cy="233" r="17" fill="none" stroke="'+C.hi+'" stroke-width="3"/>';
+}
+function homescreen(){
+  let s='<rect x="9" y="9" width="132" height="252" rx="15" fill="#3b6f8f"/>';
+  const apps=[[24,40],[60,40],[96,40],[24,84],[60,84]];
+  apps.forEach(a=>{s+='<rect x="'+a[0]+'" y="'+a[1]+'" width="28" height="28" rx="8" fill="#ffffff" opacity=".35"/>';});
+  s+='<image href="icon-192.png" x="96" y="84" width="28" height="28"/>';
+  s+='<text x="110" y="124" text-anchor="middle" font-size="8" fill="#fff" font-family="IBM Plex Sans KR,sans-serif">티끌모아</text>';
+  s+=ring(110,98,20)+hand(118,108);
+  return s;
+}
+// 카카오톡 안 브라우저 (아래쪽 ⋮)
+function kakao(withMenu,ios){
+  let s='<rect x="9" y="9" width="132" height="26" rx="0" fill="#f7f7f7"/><path d="M9 24 q0 -15 15 -15 h102 q15 0 15 15 z" fill="#f7f7f7"/>'+
+  '<text x="20" y="28" font-size="12" fill="#333">✕</text><rect x="36" y="15" width="70" height="15" rx="5" fill="#ececec"/>'+
+  '<text x="41" y="26" font-size="7.5" fill="#555" font-family="sans-serif">anmiyoung1.github.io</text><circle cx="120" cy="22" r="7" fill="'+C.kakao+'"/>';
+  s+=appBody(42);
+  s+='<rect x="9" y="236" width="132" height="25" fill="#f7f7f7"/><path d="M9 246 v0 h132" stroke="#e1e1e1"/>'+
+  '<text x="24" y="253" font-size="10" fill="#bbb">←</text><text x="52" y="253" font-size="10" fill="#bbb">→</text><text x="82" y="253" font-size="10" fill="#777">↻</text>'+
+  '<text x="124" y="253" font-size="13" font-weight="700" fill="#555">⋮</text>';
+  if(!withMenu) s+=ring(126,248,10)+hand(130,252);
+  else s+=menu(30,150,104,['공유하기','주소 복사','다른 브라우저로 열기','페이지 내 검색'],2)+hand(118,182);
+  return s;
+}
+// 크롬 (위쪽 주소창, ⤓ 아이콘, ⋮)
+function chrome(withMenu){
+  let s='<path d="M9 24 q0 -15 15 -15 h102 q15 0 15 15 v14 h-132 z" fill="#2b7d6f"/>'+
+  '<rect x="16" y="15" width="100" height="18" rx="9" fill="#ffffff" opacity=".9"/>'+
+  '<text x="24" y="27" font-size="7.5" fill="#333" font-family="sans-serif">anmiyoung1.github.io</text>'+
+  '<text x="103" y="28" font-size="9" fill="#2b7d6f" text-anchor="middle">⤓</text>'+
+  '<text x="130" y="29" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">⋮</text>';
+  s+=appBody(44);
+  if(withMenu==='popup') return s+popup('티끌모아','설치');
+  if(!withMenu) s+=ring(130,24,10)+hand(134,30)+'<text x="75" y="225" text-anchor="middle" font-size="8" fill="#66727d" font-family="IBM Plex Sans KR,sans-serif">(또는 주소창의 ⤓ 아이콘)</text>';
+  else s+=menu(46,32,92,['새 탭','방문 기록','다운로드','홈 화면에 추가','설정'],3)+hand(118,112);
+  return s;
+}
+// 사파리 (아래쪽 공유 버튼)
+function safari(withSheet){
+  let s='<rect x="9" y="9" width="132" height="20" fill="#f6f6f6"/><path d="M9 24 q0 -15 15 -15 h102 q15 0 15 15 z" fill="#f6f6f6"/>';
+  s+=appBody(36);
+  s+='<rect x="9" y="214" width="132" height="47" fill="#f6f6f6"/><rect x="22" y="220" width="106" height="16" rx="8" fill="#e6e6e6"/>'+
+  '<text x="75" y="231" text-anchor="middle" font-size="7.5" fill="#444" font-family="sans-serif">anmiyoung1.github.io</text>'+
+  '<text x="26" y="252" font-size="10" fill="#2f7cf6">‹</text><text x="50" y="252" font-size="10" fill="#bbb">›</text>';
+  s+='<g transform="translate(75 246)"><rect x="-5" y="-3" width="10" height="9" rx="1.5" fill="none" stroke="#2f7cf6" stroke-width="1.4"/><path d="M0 -9 v9 M-3 -6 l3 -3 l3 3" fill="none" stroke="#2f7cf6" stroke-width="1.4"/></g>';
+  s+='<text x="100" y="252" font-size="10" fill="#2f7cf6">⧉</text><text x="122" y="252" font-size="10" fill="#2f7cf6">☰</text>';
+  if(!withSheet) s+=ring(75,245,11)+hand(80,250);
+  else{
+    s+='<rect x="9" y="9" width="132" height="252" rx="15" fill="#000" opacity=".3"/>';
+    s+='<rect x="9" y="120" width="132" height="141" rx="12" fill="#f2f2f7"/>';
+    const it=['복사','책갈피 추가','즐겨찾기에 추가','홈 화면에 추가','페이지 내 찾기'];
+    it.forEach((t,i)=>{const yy=132+i*22;
+      s+='<rect x="18" y="'+yy+'" width="114" height="19" rx="5" fill="'+(i===3?'#fde6e3':'#fff')+'"'+(i===3?' stroke="'+C.hi+'" stroke-width="2"':'')+'/>';
+      s+='<text x="26" y="'+(yy+13)+'" font-size="9.5" fill="'+(i===3?C.hi:'#222')+'" font-weight="'+(i===3?700:400)+'" font-family="IBM Plex Sans KR,sans-serif">'+t+'</text>';
+      if(i===3) s+='<text x="122" y="'+(yy+14)+'" font-size="11" fill="'+C.hi+'" text-anchor="middle">⊞</text>';
+    });
+    s+=hand(118,206);
+  }
+  return s;
+}
+function iosAdd(){
+  let s='<rect x="9" y="9" width="132" height="252" rx="15" fill="#f2f2f7"/>'+
+  '<text x="22" y="34" font-size="9.5" fill="#2f7cf6" font-family="IBM Plex Sans KR,sans-serif">취소</text>'+
+  '<text x="75" y="34" text-anchor="middle" font-size="9.5" font-weight="700" fill="#222" font-family="IBM Plex Sans KR,sans-serif">홈 화면에 추가</text>'+
+  '<text x="128" y="34" text-anchor="end" font-size="9.5" font-weight="700" fill="#2f7cf6" font-family="IBM Plex Sans KR,sans-serif">추가</text>'+
+  '<rect x="16" y="48" width="118" height="44" rx="8" fill="#fff"/><image href="icon-192.png" x="22" y="54" width="32" height="32"/>'+
+  '<text x="62" y="68" font-size="10" fill="#222" font-family="IBM Plex Sans KR,sans-serif">티끌모아</text>'+
+  '<text x="62" y="81" font-size="7.5" fill="#888" font-family="sans-serif">anmiyoung1.github.io</text>'+
+  ring(119,30,14)+hand(124,38);
+  return s;
+}
+const STEPS={
+  a:[
+    [kakao(false),'카톡에서 링크를 열었다면','카톡 화면 <b>오른쪽 아래 ⋮</b>를 누르세요. (처음부터 Chrome으로 열렸다면 3번으로)'],
+    [kakao(true),'다른 브라우저로 열기','메뉴에서 <b>다른 브라우저로 열기</b>를 누르면 Chrome으로 열려요.'],
+    [chrome(false),'Chrome 메뉴 열기','오른쪽 위 <b>⋮</b>를 누르세요. 주소창의 <b>⤓</b> 아이콘이 보이면 그걸 눌러도 돼요.'],
+    [chrome(true),'홈 화면에 추가','<b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 누르세요.'],
+    [chrome('popup'),'설치 누르기','확인 창에서 <b>설치</b>(또는 <b>추가</b>)를 누르세요.'],
+    [homescreen(),'아이콘으로 열기','홈 화면(또는 앱 목록)에 생긴 <b>티끌모아</b>를 누르면 끝!'],
+  ],
+  i:[
+    [kakao(false,true),'카톡에서 링크를 열었다면','카톡 화면 <b>오른쪽 아래 ⋯</b>를 누르세요. (처음부터 Safari로 열렸다면 3번으로)'],
+    [kakao(true,true).replace('다른 브라우저로 열기','Safari로 열기'),'Safari로 열기','메뉴에서 <b>Safari로 열기</b>(또는 다른 브라우저로 열기)를 누르세요.'],
+    [safari(false),'공유 버튼 누르기','화면 아래쪽 가운데 <b>공유 버튼(□↑)</b>을 누르세요.'],
+    [safari(true),'홈 화면에 추가','메뉴를 아래로 내려 <b>홈 화면에 추가</b>를 누르세요.'],
+    [iosAdd(),'추가 누르기','오른쪽 위 <b>추가</b>를 누르세요.'],
+    [homescreen(),'아이콘으로 열기','홈 화면에 생긴 <b>티끌모아</b>를 누르면 끝!'],
+  ]
+};
+function draw(k){
+  document.getElementById('steps').innerHTML='<div style="display:flex;flex-direction:column;gap:10px">'+
+    STEPS[k].map((s,i)=>'<section class="step">'+(s[0].startsWith('<svg')?s[0]:phone(s[0]))+
+      '<div><h2><span class="num">'+(i+1)+'</span>'+s[1]+'</h2><p>'+s[2]+'</p></div></section>').join('')+'</div>';
+  document.getElementById('tA').setAttribute('aria-selected',k==='a');
+  document.getElementById('tI').setAttribute('aria-selected',k==='i');
+}
+document.getElementById('tA').onclick=()=>draw('a');
+document.getElementById('tI').onclick=()=>draw('i');
+draw(/iPhone|iPad|iPod/i.test(navigator.userAgent)?'i':'a');
+</script>
+</body></html>

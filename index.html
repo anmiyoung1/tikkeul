@@ -420,7 +420,7 @@ checkRemind();
   const box=$('install'),txt=$('installText'),btn=$('installBtn');
   const show=(html,label,fn)=>{
     if(Date.now()<until&&!/KAKAOTALK/i.test(ua)) return;
-    txt.innerHTML=html; btn.hidden=!label; if(label){btn.textContent=label;btn.onclick=fn;} box.hidden=false;
+    txt.innerHTML=html+' <a href="guide.html" style="color:#fff;text-decoration:underline;white-space:nowrap">그림으로 보기</a>'; btn.hidden=!label; if(label){btn.textContent=label;btn.onclick=fn;} box.hidden=false;
   };
   const hide=()=>{box.hidden=true;};
   $('installClose').onclick=()=>{ls.set('todo-installSnooze',String(Date.now()+7*DAY));hide();};
