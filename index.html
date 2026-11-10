@@ -99,6 +99,12 @@ li.done .t{color:var(--muted);text-decoration:line-through}
 .note{font-size:12px;color:var(--muted);text-align:center}
 .tools{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .head-right{display:flex;gap:6px;align-items:center}
+.install{display:flex;align-items:center;gap:10px;background:var(--accent);color:#fff;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45}
+.install img{width:36px;height:36px;border-radius:8px;flex:none}
+.install span{flex:1;min-width:0}
+.install b{font-weight:600}
+.install .ib{background:#fff;color:var(--accent);border:none;border-radius:8px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;flex:none}
+.install .ix{background:none;border:none;color:#fff;opacity:.8;font-size:18px;line-height:1;cursor:pointer;width:28px;height:28px;flex:none}
 .remind{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--accent-soft);color:var(--fg);border-radius:12px;padding:8px 12px;font-size:13px}
 .remind span{flex:1;min-width:0}
 .remind button{border:none;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
@@ -122,6 +128,12 @@ li.done .t{color:var(--muted);text-decoration:line-through}
     </div>
   </header>
 
+  <div class="install" id="install" hidden>
+    <img src="icon-192.png" alt="">
+    <span id="installText"></span>
+    <button type="button" class="ib" id="installBtn" hidden></button>
+    <button type="button" class="ix" id="installClose" aria-label="닫기">×</button>
+  </div>
   <div class="remind" id="remind" hidden>
     <span id="remindText">백업한 지 2주가 지났어요.</span>
     <button type="button" class="go" id="remindGo">지금 백업</button>
@@ -391,6 +403,7 @@ function doBackup(){
   document.body.appendChild(a);a.click();a.remove();
   ls.set('todo-lastBackup',String(Date.now()));
   checkRemind();
+
   toast('백업 파일을 다운로드 폴더에 저장했어요.');
 }
 $('backup').onclick=doBackup;
@@ -398,6 +411,50 @@ $('remindGo').onclick=doBackup;
 $('remindLater').onclick=()=>{ls.set('todo-snooze',String(Date.now()+3*DAY));checkRemind();};
 $('more').onclick=()=>{const open=$('tools').hidden;$('tools').hidden=!open;$('more').setAttribute('aria-expanded',open);if(open)$('tools').scrollIntoView({behavior:'smooth',block:'nearest'});};
 checkRemind();
+/* 설치 도우미: 브라우저로 열었을 때 앱 설치를 안내 */
+(function(){
+  const ua=navigator.userAgent;
+  const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  if(standalone) return;
+  const until=Number(ls.get('todo-installSnooze')||0);
+  const box=$('install'),txt=$('installText'),btn=$('installBtn');
+  const show=(html,label,fn)=>{
+    if(Date.now()<until&&!/KAKAOTALK/i.test(ua)) return;
+    txt.innerHTML=html; btn.hidden=!label; if(label){btn.textContent=label;btn.onclick=fn;} box.hidden=false;
+  };
+  const hide=()=>{box.hidden=true;};
+  $('installClose').onclick=()=>{ls.set('todo-installSnooze',String(Date.now()+7*DAY));hide();};
+  window.addEventListener('appinstalled',()=>{hide();toast('설치됐어요! 이제 홈 화면 아이콘으로 여세요.');});
+  const isIOS=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/.test(ua)&&'ontouchend' in document);
+  const external='kakaotalk://web/openExternal?url='+encodeURIComponent(location.href);
+
+  if(/KAKAOTALK/i.test(ua)){
+    // 카카오톡 안 브라우저는 설치가 안 되므로 기본 브라우저로 바로 넘김
+    show('<b>카카오톡 안에서는 설치가 안 돼요.</b><br>'+(isIOS?'Safari':'Chrome')+'로 열어서 설치해 주세요.','브라우저로 열기',()=>{location.href=external;});
+    setTimeout(()=>{location.href=external;},400);
+    return;
+  }
+  if(/NAVER|Instagram|FBAN|FBAV|Line\//i.test(ua)){
+    show('<b>이 앱 안에서는 설치가 안 돼요.</b><br>오른쪽 위 메뉴에서 <b>다른 브라우저로 열기</b>를 눌러 주세요.');
+    return;
+  }
+  if(isIOS){
+    show('<b>앱으로 설치하기</b><br>아래쪽 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b>를 누르세요.');
+    return;
+  }
+  let prompted=false;
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault(); prompted=true;
+    show('<b>티끌모아를 앱으로 설치할 수 있어요.</b><br>홈 화면에서 바로 열려요.','설치',async()=>{
+      e.prompt();
+      try{const r=await e.userChoice; if(r.outcome==='accepted') hide();}catch(err){}
+    });
+  });
+  setTimeout(()=>{
+    if(prompted) return;
+    show('<b>앱으로 설치하기</b><br>오른쪽 위 <b>⋮</b> 메뉴 → <b>홈 화면에 추가</b>를 누르세요. 이미 설치했다면 홈 화면 아이콘으로 여세요.');
+  },2500);
+})();
 $('restoreFile').onchange=async e=>{
   const f=e.target.files[0]; if(!f) return;
   try{
