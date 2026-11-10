@@ -18,18 +18,18 @@
 :root{
   --bg:#f3f5f7; --surface:#ffffff; --line:#dde3e8; --fg:#18232c; --muted:#66727d;
   --accent:#1f7a6d; --accent-soft:#d6ece8; --done:#2e9e5b; --warn:#c98a1b; --sun:#c4473a; --sat:#2f63b8;
-  --rep:#6a55b5; --rep-soft:#ebe6f8;
+  --rep:#6a55b5; --rep-soft:#ebe6f8; --stamp:#d43d3d;
   --display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
   --body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#11181d; --surface:#1a232a; --line:#2b3740; --fg:#e6edf1; --muted:#93a1ab;
   --accent:#4fbfae; --accent-soft:#1d3a36; --done:#4cc27e; --warn:#e0a640; --sun:#ef7a6c; --sat:#7ea6ec;
-  --rep:#b4a3f0; --rep-soft:#2c2745; color-scheme:dark}}
+  --rep:#b4a3f0; --rep-soft:#2c2745; --stamp:#ff7070; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#11181d; --surface:#1a232a; --line:#2b3740; --fg:#e6edf1; --muted:#93a1ab;
   --accent:#4fbfae; --accent-soft:#1d3a36; --done:#4cc27e; --warn:#e0a640; --sun:#ef7a6c; --sat:#7ea6ec;
-  --rep:#b4a3f0; --rep-soft:#2c2745; color-scheme:dark}
+  --rep:#b4a3f0; --rep-soft:#2c2745; --stamp:#ff7070; color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:560px;margin:0 auto;padding-block:12px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:10px}
 header{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -50,6 +50,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .day.today .n{border:1.5px solid var(--accent)}
 .day.sel{background:var(--accent-soft)}
 .day.sel .n{background:var(--accent);color:#fff;border-color:var(--accent)}
+.day{position:relative}
+.stamp{position:absolute;right:-1px;bottom:-1px;width:30px;height:30px;transform:rotate(-14deg);color:var(--stamp);opacity:.92;pointer-events:none}
+.stamp svg{width:100%;height:100%;display:block}
+.day.stamped .n{opacity:.85}
+.big-stamp{position:absolute;right:-2px;top:-4px;width:56px;height:56px;color:var(--stamp);transform:rotate(-12deg);pointer-events:none}
+.big-stamp svg{width:100%;height:100%;display:block}
+.big-stamp.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:rotate(-30deg) scale(1.8);opacity:0}100%{transform:rotate(-12deg) scale(1);opacity:1}}
+.panel-head{position:relative}
+.panel-left{display:flex;flex-direction:column;gap:2px;min-width:0}
 .day.empty{visibility:hidden}
 .cnt{font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted);line-height:1;padding:2px 4px;border-radius:6px}
 .cnt.part{color:var(--warn)}
@@ -96,7 +106,7 @@ li.done .t{color:var(--muted);text-decoration:line-through}
 .remind .later{background:none;color:var(--muted)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;max-width:calc(100% - 32px);text-align:center;z-index:20}
 .tools button,.restore{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
-@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}.big-stamp.pop{animation:none}}
 </style>
 </head><body>
 <div class="wrap">
@@ -124,8 +134,11 @@ li.done .t{color:var(--muted);text-decoration:line-through}
 
   <section class="panel">
     <div class="panel-head">
-      <h2 id="dayLabel">11월 10일 화요일</h2>
-      <span class="score" id="score">0 / 0 완료</span>
+      <div class="panel-left">
+        <h2 id="dayLabel">11월 10일 화요일</h2>
+        <span class="score" id="score">0 / 0 완료</span>
+      </div>
+      <div class="big-stamp" id="bigStamp" hidden></div>
     </div>
     <div class="bar"><i id="barFill"></i></div>
     <form id="addForm">
@@ -189,6 +202,17 @@ function label(wd){
   return wd.slice().sort((a,b)=>((a+6)%7)-((b+6)%7)).map(i=>WD[i]).join('·');
 }
 
+/* '참 잘했어요' 도장 */
+function stampSVG(){
+  let d='';const N=16,R=46,r=41;
+  for(let i=0;i<=N*2;i++){const a=Math.PI*i/N, rr=i%2?r:R;d+=(i?'L':'M')+(50+rr*Math.cos(a)).toFixed(1)+' '+(50+rr*Math.sin(a)).toFixed(1);}
+  return '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="'+d+'Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>'+
+    '<circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width="2.5"/>'+
+    '<text x="50" y="45" text-anchor="middle" font-size="19" font-weight="700" fill="currentColor" font-family="Do Hyeon,sans-serif">참 잘</text>'+
+    '<text x="50" y="66" text-anchor="middle" font-size="19" font-weight="700" fill="currentColor" font-family="Do Hyeon,sans-serif">했어요</text></svg>';
+}
+const STAMP=stampSVG();
+let lastSelDone=null;
 function render(){
   $('monthLabel').textContent=view.getFullYear()+'년 '+(view.getMonth()+1)+'월';
   const g=$('grid'); g.innerHTML='';
@@ -200,12 +224,15 @@ function render(){
     b.className='day'+(dt.getDay()===0?' sun':'')+(dt.getDay()===6?' sat':'')+(HOL[k]?' hol':'')+(k===TODAY?' today':'')+(k===sel?' sel':'');
     b.setAttribute('aria-label',(dt.getMonth()+1)+'월 '+d+'일');
     const n=document.createElement('span');n.className='n';n.textContent=d;b.appendChild(n);
-    if(t.total){
+    if(t.total&&t.done===t.total&&k<=TODAY){
+      b.classList.add('stamped');
+      const s=document.createElement('span');s.className='stamp';s.innerHTML=STAMP;b.appendChild(s);
+    } else if(t.total){
       const c=document.createElement('span');
       c.className='cnt '+(t.done===t.total?'full':t.done>0?'part':'')+(k>TODAY?' future':'');
       c.textContent=t.done+'/'+t.total;b.appendChild(c);
     }
-    b.onclick=()=>{sel=k;asking=null;syncWd();render();};
+    b.onclick=()=>{sel=k;asking=null;lastSelDone=null;syncWd();render();};
     g.appendChild(b);
   }
   const sd=parse(sel);
@@ -213,6 +240,11 @@ function render(){
   if(HOL[sel]){const h=document.createElement('span');h.className='hol-name';h.textContent=HOL[sel];$('dayLabel').appendChild(h);}
   const t=tally(sel);
   $('score').textContent=t.done+' / '+t.total+' 완료';
+  const allDone=t.total>0&&t.done===t.total&&sel<=TODAY, bs=$('bigStamp');
+  if(!bs.innerHTML) bs.innerHTML=STAMP;
+  bs.hidden=!allDone;
+  if(allDone&&lastSelDone===false){bs.classList.remove('pop');void bs.offsetWidth;bs.classList.add('pop');}
+  lastSelDone=allDone;
   $('barFill').style.width=t.total?(t.done/t.total*100)+'%':'0';
   const ul=$('list'); ul.innerHTML='';
   if(!t.total){const p=document.createElement('li');p.className='empty-msg';p.textContent='이 날은 할 일이 없어요. 위 칸에 적어서 추가해 보세요.';ul.appendChild(p);}
