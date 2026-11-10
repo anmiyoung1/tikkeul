@@ -98,9 +98,9 @@ li.imp.done .t{font-weight:400}
 li.dragging{position:relative;z-index:5;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:8px;transition:none}
 li.shift{transition:transform .15s}
 .impdot{position:absolute;top:4px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--imp)}
-.tag{flex:none;font-size:11px;font-weight:500;color:var(--rep);background:var(--rep-soft);border-radius:6px;padding:0 6px;white-space:nowrap;border:none;font-family:inherit;line-height:1.6;cursor:pointer}
-.next{font-size:15px}
-.next-sp{width:28px;flex:none}
+.tag{flex:none;font-size:11px;font-weight:500;color:var(--rep);background:var(--rep-soft);border-radius:6px;padding:0 6px;white-space:nowrap}
+.del.armed{background:var(--imp-soft);color:var(--imp);font-weight:700}
+.ask-hint{font-size:12px;color:var(--muted)}
 .del{background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;width:28px;height:28px;border-radius:7px;flex:none}
 .del:hover{background:var(--bg);color:var(--sun)}
 .ask{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-left:30px;font-size:13px;color:var(--muted)}
@@ -274,22 +274,24 @@ function render(){
   const ul=$('list'); ul.innerHTML='';
   if(!t.total){const p=document.createElement('li');p.className='empty-msg';p.textContent='이 날은 할 일이 없어요. 위 칸에 적어서 추가해 보세요.';ul.appendChild(p);}
   const rows=[];
+  const twoStep=(key,doDel)=>()=>{ if(asking===key){asking=null;doDel();} else {asking=key;render();} };
   t.rs.forEach(r=>{
     const done=!!(t.d.rdone&&t.d.rdone[r.id]);
     const imp=!!(t.d.rimp&&t.d.rimp[r.id]);
-    rows.push({key:'r:'+r.id,el:item({id:'r-'+r.id,text:r.text,done,imp,tag:label(r.wd),
+    const key='r:'+r.id;
+    rows.push({key,el:item({id:'r-'+r.id,text:r.text,done,imp,tag:label(r.wd),
       onCheck:v=>{const d=dayRec(sel);if(v)d.rdone[r.id]=true;else delete d.rdone[r.id];saveDay(sel);},
-      onStar:()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else{d.rimp[r.id]=true;toTop('r:'+r.id);}saveDay(sel);},
-      onDel:()=>{const d=dayRec(sel);d.skip=[...(d.skip||[]),r.id];delete d.rdone[r.id];delete d.rimp[r.id];saveDay(sel);},
-      onTag:()=>{asking=asking===r.id?null:r.id;render();},
-      ask:asking===r.id?r:null})});
+      onStar:()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else{d.rimp[r.id]=true;toTop(key);}saveDay(sel);},
+      onDel:twoStep(key,()=>{const d=dayRec(sel);d.skip=[...(d.skip||[]),r.id];delete d.rdone[r.id];delete d.rimp[r.id];saveDay(sel);}),
+      ask:asking===key?{routine:r}:null})});
   });
   t.d.items.forEach(it=>{
-    rows.push({key:'i:'+it.id,el:item({id:'i-'+it.id,text:it.text,done:!!it.done,imp:!!it.imp,
+    const key='i:'+it.id;
+    rows.push({key,el:item({id:'i-'+it.id,text:it.text,done:!!it.done,imp:!!it.imp,
       onCheck:v=>{it.done=v;saveDay(sel);},
-      onStar:()=>{it.imp=!it.imp;if(it.imp)toTop('i:'+it.id);saveDay(sel);},
-      onNext:()=>carryOver(it),
-      onDel:()=>{const d=dayRec(sel);d.items=d.items.filter(x=>x!==it);saveDay(sel);}})});
+      onStar:()=>{it.imp=!it.imp;if(it.imp)toTop(key);saveDay(sel);},
+      onDel:twoStep(key,()=>{const d=dayRec(sel);d.items=d.items.filter(x=>x!==it);saveDay(sel);}),
+      ask:asking===key?{it}:null})});
   });
   const ord=(t.d.order)||[];
   rows.forEach((r,i)=>{const p=ord.indexOf(r.key);r.pos=p<0?1e6+i:p;});
@@ -365,31 +367,29 @@ function item(o){
   cb.onchange=()=>o.onCheck(cb.checked);
   const s=document.createElement('span');s.className='t';s.textContent=o.text;
   lb.append(cb,s); li.appendChild(lb);
-  if(o.tag){const g=document.createElement('button');g.type='button';g.className='tag';g.textContent=o.tag;g.title='반복 설정';g.onclick=o.onTag;li.appendChild(g);}
+  if(o.tag){const g=document.createElement('span');g.className='tag';g.textContent=o.tag;li.appendChild(g);}
   const st=document.createElement('button');st.type='button';st.className='star';st.textContent=o.imp?'★':'☆';
   st.setAttribute('aria-pressed',!!o.imp);st.setAttribute('aria-label','꼭 할 일 표시');st.title='꼭 할 일';
   st.onclick=o.onStar; li.appendChild(st);
-  if(o.onNext){
-    const nx=document.createElement('button');nx.type='button';nx.className='del next';nx.textContent='→';
-    nx.setAttribute('aria-label','내일로 넘기기');nx.title='내일로 넘기기';nx.onclick=o.onNext;li.appendChild(nx);
-  } else {
-    const sp=document.createElement('span');sp.className='next-sp';li.appendChild(sp);
-  }
-  const del=document.createElement('button');del.type='button';del.className='del';del.textContent='×';
-  del.setAttribute('aria-label',o.tag?'이 날만 빼기':'삭제');del.title=o.tag?'이 날만 빼기':'삭제';
+  const del=document.createElement('button');del.type='button';del.className='del'+(o.ask?' armed':'');del.textContent='×';
+  del.setAttribute('aria-label',o.ask?'한 번 더 누르면 삭제':'삭제');del.title=o.ask?'한 번 더 누르면 삭제':'삭제';
   del.onclick=o.onDel; li.appendChild(del);
   if(o.ask){
-    const r=o.ask, a=document.createElement('div');a.className='ask';
-    a.append(label(r.wd)+' 반복이에요.');
-    const b2=document.createElement('button');b2.type='button';b2.className='danger';b2.textContent='이 날부터 반복 끝내기';
-    b2.onclick=()=>{
-      asking=null;
-      if(sel<=r.start) routines=routines.filter(x=>x!==r); else r.end=addDays(sel,-1);
-      saveRoutines();
-    };
-    const b3=document.createElement('button');b3.type='button';b3.textContent='닫기';
+    const a=document.createElement('div');a.className='ask';
+    if(o.ask.it){
+      const b1=document.createElement('button');b1.type='button';b1.textContent='내일로 넘기기';
+      b1.onclick=()=>{asking=null;carryOver(o.ask.it);};
+      a.append(b1);
+    } else {
+      const r=o.ask.routine;
+      const b1=document.createElement('button');b1.type='button';b1.className='danger';b1.textContent='이 날부터 반복 끝내기';
+      b1.onclick=()=>{asking=null;if(sel<=r.start) routines=routines.filter(x=>x!==r); else r.end=addDays(sel,-1);saveRoutines();};
+      a.append(b1);
+    }
+    const b3=document.createElement('button');b3.type='button';b3.textContent='취소';
     b3.onclick=()=>{asking=null;render();};
-    a.append(b2,b3); li.appendChild(a);
+    const h=document.createElement('span');h.className='ask-hint';h.textContent='× 한 번 더 누르면 '+(o.ask.it?'삭제':'이 날만 빼기');
+    a.append(b3,h); li.appendChild(a);
   }
   return li;
 }
