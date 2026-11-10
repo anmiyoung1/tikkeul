@@ -116,6 +116,14 @@ li.shift{transition:transform .15s}
 .empty-msg{color:var(--muted);font-size:14px;text-align:center;padding:12px 0;justify-content:center}
 .note{font-size:12px;color:var(--muted);text-align:center}
 .tools{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.purge{background:var(--surface);border:1px solid var(--imp);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.purge label{font-weight:600}
+.purge input{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px 10px;font:inherit;height:40px;box-sizing:border-box}
+.purge p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.purge-btns{display:flex;gap:8px}
+.purge-btns button{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
+.purge-btns .danger{background:var(--imp);border-color:var(--imp);color:#fff;font-weight:600}
+.purge-btns .danger:disabled{opacity:.4;cursor:default}
 .head-right{display:flex;gap:6px;align-items:center}
 .install{display:flex;align-items:center;gap:10px;background:var(--accent);color:#fff;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45}
 .install img{width:36px;height:36px;border-radius:8px;flex:none}
@@ -191,7 +199,16 @@ li.shift{transition:transform .15s}
   </section>
   <p class="note" id="status" hidden>불러오는 중…</p>
   <div class="toast" id="toast" hidden></div>
-  <div class="tools" id="tools" hidden><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
+  <div class="tools" id="tools" hidden><button type="button" id="purgeOpen">날짜 이후 삭제</button><button type="button" id="backup">백업 저장</button><label class="restore">백업 불러오기<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
+  <div class="purge" id="purge" hidden>
+    <label for="purgeDate">이 날짜부터 이후의 할 일을 모두 지워요</label>
+    <input type="date" id="purgeDate">
+    <p id="purgeInfo"></p>
+    <div class="purge-btns">
+      <button type="button" class="danger" id="purgeGo">삭제</button>
+      <button type="button" id="purgeCancel">취소</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -544,6 +561,39 @@ function doBackup(){
   toast('백업 파일을 다운로드 폴더에 저장했어요.');
 }
 $('backup').onclick=doBackup;
+
+/* 날짜 이후 삭제 */
+function purgePlan(from){
+  const dayKeys=Object.keys(days).filter(k=>k>=from&&days[k]&&((days[k].items||[]).length||Object.keys(days[k].rdone||{}).length||Object.keys(days[k].rimp||{}).length||(days[k].skip||[]).length));
+  const items=dayKeys.reduce((n,k)=>n+(days[k].items||[]).length,0);
+  const rStop=routines.filter(r=>!r.end||r.end>=from);
+  return {dayKeys,items,rStop};
+}
+function purgeInfo(){
+  const from=$('purgeDate').value;
+  if(!from){$('purgeInfo').textContent='날짜를 골라 주세요.';$('purgeGo').disabled=true;return;}
+  const p=purgePlan(from), d=parse(from), lbl=d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()+'('+WD[d.getDay()]+')';
+  const parts=[];
+  if(p.items) parts.push('한번 할 일 '+p.items+'개');
+  if(p.rStop.length) parts.push('반복 할 일 '+p.rStop.length+'개 ('+lbl+'부터 멈춤)');
+  if(!parts.length&&!p.dayKeys.length){$('purgeInfo').textContent=lbl+' 이후에는 지울 내용이 없어요.';$('purgeGo').disabled=true;return;}
+  $('purgeInfo').innerHTML='';
+  $('purgeInfo').append(lbl+'부터 지워져요: '+(parts.join(', ')||'체크·별표 기록')+'. 그 전 날짜의 기록은 그대로 남아요. 되돌릴 수 없으니 필요하면 먼저 백업 저장을 해 두세요.');
+  $('purgeGo').disabled=false;
+}
+$('purgeOpen').onclick=()=>{$('purgeDate').value=sel;$('purge').hidden=false;purgeInfo();$('purge').scrollIntoView({behavior:'smooth',block:'nearest'});};
+$('purgeDate').oninput=purgeInfo;
+$('purgeCancel').onclick=()=>{$('purge').hidden=true;};
+$('purgeGo').onclick=()=>{
+  const from=$('purgeDate').value; if(!from) return;
+  const p=purgePlan(from);
+  Object.keys(days).forEach(k=>{if(k>=from) delete days[k];});
+  routines=routines.filter(r=>r.start<from);
+  routines.forEach(r=>{if(!r.end||r.end>=from) r.end=addDays(from,-1);});
+  saveLocal(); asking=null; render(); checkRemind();
+  $('purge').hidden=true;
+  toast('지웠어요. 한번 할 일 '+p.items+'개, 반복 '+p.rStop.length+'개 정리');
+};
 $('remindGo').onclick=doBackup;
 $('remindLater').onclick=()=>{ls.set('todo-snooze',String(Date.now()+3*DAY));checkRemind();};
 $('more').onclick=()=>{const open=$('tools').hidden;$('tools').hidden=!open;$('more').setAttribute('aria-expanded',open);if(open)$('tools').scrollIntoView({behavior:'smooth',block:'nearest'});};
