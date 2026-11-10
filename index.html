@@ -279,19 +279,25 @@ function render(){
       v=>{const d=dayRec(sel);if(v)d.rdone[r.id]=true;else delete d.rdone[r.id];saveDay(sel);},
       ()=>{asking=asking===r.id?null:r.id;render();},
       asking===r.id?r:null,imp,
-      ()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else d.rimp[r.id]=true;saveDay(sel);})});
+      ()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else{d.rimp[r.id]=true;toTop('r:'+r.id);}saveDay(sel);})});
   });
   t.d.items.forEach(it=>{
     rows.push({key:'i:'+it.id,el:item('i-'+it.id,it.text,!!it.done,null,
       v=>{it.done=v;saveDay(sel);},
       ()=>{dayRec(sel).items=t.d.items.filter(x=>x!==it);saveDay(sel);},null,!!it.imp,
-      ()=>{it.imp=!it.imp;saveDay(sel);})});
+      ()=>{it.imp=!it.imp;if(it.imp)toTop('i:'+it.id);saveDay(sel);})});
   });
   const ord=(t.d.order)||[];
   rows.forEach((r,i)=>{const p=ord.indexOf(r.key);r.pos=p<0?1e6+i:p;});
   rows.sort((a,b)=>a.pos-b.pos);
   rows.forEach(r=>{r.el.dataset.key=r.key;ul.appendChild(r.el);});
   enableDrag(ul);
+}
+
+/* 별표한 줄을 맨 위로 */
+function toTop(key){
+  const keys=[...$('list').querySelectorAll('li[data-key]')].map(l=>l.dataset.key).filter(k=>k!==key);
+  dayRec(sel).order=[key,...keys];
 }
 
 /* 끌어서 순서 바꾸기 (≡ 손잡이) */
