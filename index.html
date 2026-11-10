@@ -125,7 +125,7 @@ li.done .t{color:var(--muted);text-decoration:line-through}
         <button type="button" data-r="custom" aria-pressed="false">요일 선택</button>
       </div>
       <div class="wd" id="wd" hidden></div>
-      <div class="hint" id="hint">선택한 날에만 표시돼요.</div>
+      <div class="hint" id="hint" hidden></div>
     </form>
     <ul id="list"></ul>
   </section>
@@ -237,7 +237,7 @@ function item(id,text,done,tag,onCheck,onDel,ask){
 
 /* 반복 선택 UI */
 const PRESET={daily:[0,1,2,3,4,5,6],weekday:[1,2,3,4,5],weekend:[0,6]};
-const HINT={once:'선택한 날에만 표시돼요.',daily:'선택한 날부터 매일 자동으로 표시돼요.',weekday:'선택한 날부터 월~금에 자동으로 표시돼요.',weekend:'선택한 날부터 토·일에 자동으로 표시돼요.'};
+const HINT={once:'',daily:'선택한 날부터 매일 자동으로 표시돼요.',weekday:'선택한 날부터 월~금에 자동으로 표시돼요.',weekend:'선택한 날부터 토·일에 자동으로 표시돼요.'};
 function syncWd(){ if(mode==='custom'&&!pickWd.length) pickWd=[parse(sel).getDay()]; drawWd(); }
 function drawWd(){
   const box=$('wd'); box.hidden=mode!=='custom'; box.innerHTML='';
@@ -250,6 +250,7 @@ function drawWd(){
   $('hint').textContent=mode==='custom'
     ?(pickWd.length?'선택한 날부터 매주 '+label(pickWd)+'에 자동으로 표시돼요.':'요일을 하나 이상 골라 주세요.')
     :HINT[mode];
+  $('hint').hidden=!$('hint').textContent;
 }
 $('seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
   mode=b.dataset.r;
@@ -266,7 +267,7 @@ $('addForm').addEventListener('submit',e=>{
     $('newTask').value=''; saveDay(sel);
   } else {
     const wd=mode==='custom'?[...pickWd]:PRESET[mode];
-    if(!wd.length){$('hint').textContent='요일을 하나 이상 골라 주세요.';return;}
+    if(!wd.length){$('hint').textContent='요일을 하나 이상 골라 주세요.';$('hint').hidden=false;return;}
     routines.push({id:uid6(),text:v,wd,start:sel,end:null});
     $('newTask').value=''; saveRoutines();
   }
