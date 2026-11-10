@@ -161,7 +161,7 @@ li.shift{transition:transform .15s}
   <section class="panel">
     <div class="panel-head">
       <div class="panel-left">
-        <h2 id="dayLabel">2026년 11월 10일 화요일</h2>
+        <h2 id="dayLabel">2026.11.10(화)</h2>
         <span class="score" id="score">(0 / 0 완료)</span>
       </div>
       <div class="big-stamp" id="bigStamp" hidden></div>
@@ -276,7 +276,7 @@ function render(){
     g.appendChild(b);
   }
   const sd=parse(sel);
-  $('dayLabel').textContent=sd.getFullYear()+'년 '+(sd.getMonth()+1)+'월 '+sd.getDate()+'일 '+WD[sd.getDay()]+'요일';
+  $('dayLabel').textContent=sd.getFullYear()+'.'+(sd.getMonth()+1)+'.'+sd.getDate()+'('+WD[sd.getDay()]+')';
   if(HOL[sel]){const h=document.createElement('span');h.className='hol-name';h.textContent=HOL[sel];$('dayLabel').appendChild(h);}
   const t=tally(sel);
   $('score').textContent='('+t.done+' / '+t.total+' 완료)';
