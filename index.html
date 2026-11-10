@@ -162,6 +162,9 @@ li.shift{transition:transform .15s}
 .remind button{border:none;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
 .remind .go{background:var(--accent);color:#fff;font-weight:600}
 .remind .later{background:none;color:var(--muted)}
+.undo{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:6px 6px 6px 16px;border-radius:999px;font-size:13px;width:max-content;max-width:calc(100% - 32px);display:flex;align-items:center;gap:10px;z-index:21;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.undo span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.undo button{flex:none;background:var(--accent);color:#fff;border:none;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;max-width:calc(100% - 32px);text-align:center;z-index:20}
 .tools button,.restore{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
 @media (prefers-reduced-motion:reduce){.tools .bday-btn:hover span{animation:none}.grid.slide-l,.grid.slide-r{animation:none}.bar i{transition:none}.big-stamp.pop{animation:none}}
@@ -226,6 +229,7 @@ li.shift{transition:transform .15s}
   </section>
   <p class="note" id="status" hidden>불러오는 중…</p>
   <div class="toast" id="toast" hidden></div>
+  <div class="undo" id="undo" hidden><span id="undoText"></span><button type="button" id="undoBtn">되돌리기</button></div>
   <div class="tools" id="tools" hidden><button type="button" id="bdayOpen" class="bday-btn"><span aria-hidden="true">🎂</span> 생일관리</button><button type="button" id="purgeOpen">할일정리</button><button type="button" id="backup">백업저장</button><label class="restore">백업복원<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
   <div class="purge" id="purge" hidden>
     <div class="bp-head"><b class="purge-title">할일정리</b><button type="button" class="bp-close" id="purgeClose" aria-label="닫기">×</button></div>
@@ -399,7 +403,7 @@ function render(){
     rows.push({key,el:item({id:'r-'+r.id,text:r.text,done,imp,tag:label(r.wd),
       onCheck:v=>{const d=dayRec(sel);if(v)d.rdone[r.id]=true;else delete d.rdone[r.id];saveDay(sel);},
       onStar:()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else{d.rimp[r.id]=true;toTop(key);}saveDay(sel);},
-      onDel:twoStep(key,()=>{const d=dayRec(sel);d.skip=[...(d.skip||[]),r.id];delete d.rdone[r.id];delete d.rimp[r.id];saveDay(sel);}),
+      onDel:twoStep(key,()=>withUndo('"'+r.text+'" 이 날에서 뺐어요.',()=>{const d=dayRec(sel);d.skip=[...(d.skip||[]),r.id];delete d.rdone[r.id];delete d.rimp[r.id];saveDay(sel);})),
       ask:asking===key?{routine:r}:null})});
   });
   t.d.items.forEach(it=>{
@@ -407,7 +411,7 @@ function render(){
     rows.push({key,el:item({id:'i-'+it.id,text:it.text,done:!!it.done,imp:!!it.imp,
       onCheck:v=>{it.done=v;saveDay(sel);},
       onStar:()=>{it.imp=!it.imp;if(it.imp)toTop(key);saveDay(sel);},
-      onDel:twoStep(key,()=>{const d=dayRec(sel);d.items=d.items.filter(x=>x!==it);saveDay(sel);}),
+      onDel:twoStep(key,()=>withUndo('"'+it.text+'" 지웠어요.',()=>{const d=dayRec(sel);d.items=d.items.filter(x=>x!==it);saveDay(sel);})),
       ask:asking===key?{it}:null})});
   });
   const ord=(t.d.order)||[];
@@ -426,8 +430,7 @@ function carryOver(it){
   if(!dup) dst.items.push({id:uid6(),text:it.text,done:false,imp:!!it.imp});
   saveDay(from); if(!dup) saveDay(to);
   const d=parse(to), msg=(d.getMonth()+1)+'월 '+d.getDate()+'일';
-  const say=typeof toast==='function'?toast:(m=>{const st=$('status');if(st){st.textContent=m;st.hidden=false;setTimeout(()=>{st.hidden=true;},3000);}});
-  say(dup?msg+'에 같은 할 일이 이미 있어서 오늘 것만 지웠어요.':msg+'로 넘겼어요.');
+  return dup?msg+'에 같은 할 일이 이미 있어서 오늘 것만 지웠어요.':msg+'로 넘겼어요.';
 }
 
 /* 별표한 줄을 맨 위로 */
@@ -497,12 +500,12 @@ function item(o){
     a.append(sb);
     if(o.ask.it){
       const b1=document.createElement('button');b1.type='button';b1.textContent='내일로 넘기기';
-      b1.onclick=()=>{asking=null;carryOver(o.ask.it);};
+      b1.onclick=()=>{asking=null;withUndo('',()=>carryOver(o.ask.it));};
       a.append(b1);
     } else {
       const r=o.ask.routine;
       const b1=document.createElement('button');b1.type='button';b1.className='danger';b1.textContent='이 날부터 반복 끝내기';
-      b1.onclick=()=>{asking=null;if(sel<=r.start) routines=routines.filter(x=>x!==r); else r.end=addDays(sel,-1);saveRoutines();};
+      b1.onclick=()=>{asking=null;withUndo('"'+r.text+'" 반복을 끝냈어요.',()=>{if(sel<=r.start) routines=routines.filter(x=>x!==r); else r.end=addDays(sel,-1);saveRoutines();});};
       a.append(b1);
     }
     const b3=document.createElement('button');b3.type='button';b3.textContent='취소';
@@ -642,6 +645,29 @@ function doBackup(){
   toast('백업 파일을 다운로드 폴더에 저장했어요.');
 }
 $('backup').onclick=doBackup;
+$('undoBtn').onclick=doUndo;
+/* 되돌리기 */
+let undoSnap=null, undoTimer=null;
+function withUndo(msg,fn){
+  const snap=JSON.stringify({days,routines,bdays});
+  const ret=fn();
+  undoSnap=snap;
+  $('undoText').textContent=ret||msg;
+  $('toast').hidden=true;
+  $('undo').hidden=false;
+  clearTimeout(undoTimer); undoTimer=setTimeout(()=>{$('undo').hidden=true;undoSnap=null;},7000);
+}
+function doUndo(){
+  if(!undoSnap) return;
+  const x=JSON.parse(undoSnap); undoSnap=null;
+  days=x.days; routines=x.routines; bdays=x.bdays||[];
+  saveLocal(); asking=null; render();
+  if(!$('bdayPanel').hidden) drawBdays();
+  if(typeof checkRemind==='function') checkRemind();
+  clearTimeout(undoTimer); $('undo').hidden=true;
+  toast('되돌렸어요.');
+}
+
 
 /* 생일 관리 */
 let bdayLunar=false, bdayEdit=null;
@@ -669,7 +695,7 @@ function drawBdays(){
     const nx=document.createElement('span');nx.className='nx';
     if(n){const dd=Math.round((parse(n)-parse(TODAY))/86400000);const nd=parse(n);nx.textContent=(dd===0?'오늘':'D-'+dd)+' · '+(nd.getMonth()+1)+'.'+nd.getDate();}
     const del=document.createElement('button');del.type='button';del.className='del';del.textContent='×';del.setAttribute('aria-label','삭제');
-    del.onclick=()=>{ if(del.classList.contains('armed')){bdays=bdays.filter(x=>x!==b);saveLocal();drawBdays();render();} else {del.classList.add('armed');del.title='한 번 더 누르면 삭제';nx.textContent='× 한 번 더 누르면 삭제';} };
+    del.onclick=()=>{ if(del.classList.contains('armed')){withUndo(b.name+' 생일을 지웠어요.',()=>{bdays=bdays.filter(x=>x!==b);saveLocal();drawBdays();render();});} else {del.classList.add('armed');del.title='한 번 더 누르면 삭제';nx.textContent='× 한 번 더 누르면 삭제';} };
     li.append(nm,nx,del); ul.appendChild(li);
   });
 }
@@ -733,12 +759,13 @@ $('purgeClose').onclick=()=>{$('purge').hidden=true;};
 $('purgeGo').onclick=()=>{
   const from=$('purgeDate').value; if(!from) return;
   const p=purgePlan(from);
-  Object.keys(days).forEach(k=>{if(k>=from) delete days[k];});
-  routines=routines.filter(r=>r.start<from);
-  routines.forEach(r=>{if(!r.end||r.end>=from) r.end=addDays(from,-1);});
-  saveLocal(); asking=null; render(); checkRemind();
+  withUndo('할 일을 정리했어요. 한번 할 일 '+p.items+'개, 반복 '+p.rStop.length+'개',()=>{
+    Object.keys(days).forEach(k=>{if(k>=from) delete days[k];});
+    routines=routines.filter(r=>r.start<from);
+    routines.forEach(r=>{if(!r.end||r.end>=from) r.end=addDays(from,-1);});
+    saveLocal(); asking=null; render(); checkRemind();
+  });
   $('purge').hidden=true;
-  toast('할 일을 정리했어요. 한번 할 일 '+p.items+'개, 반복 '+p.rStop.length+'개 정리');
 };
 $('remindGo').onclick=doBackup;
 $('remindLater').onclick=()=>{ls.set('todo-snooze',String(Date.now()+3*DAY));checkRemind();};
