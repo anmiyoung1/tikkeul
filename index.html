@@ -410,7 +410,7 @@ function item(o){
     }
     const b3=document.createElement('button');b3.type='button';b3.textContent='취소';
     b3.onclick=()=>{asking=null;render();};
-    const h=document.createElement('span');h.className='ask-hint';h.textContent='× 한 번 더 누르면 '+(o.ask.it?'삭제':'이 날만 빼기');
+    const h=document.createElement('span');h.className='ask-hint';h.textContent='× 한 번 더 누르면 삭제';
     a.append(b3,h); li.appendChild(a);
   }
   return li;
