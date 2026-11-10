@@ -141,8 +141,9 @@ li.shift{transition:transform .15s}
 .bp-row select{flex:1;min-width:64px}
 .bp-row .add{height:40px}
 .bp-note{margin:0;color:var(--muted);font-size:12px}
-.purge{background:var(--surface);border:1px solid var(--imp);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:14px}
-.purge label{font-weight:600}
+.purge{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.purge label{font-weight:400}
+.bp-head .purge-title{color:var(--fg)}
 .purge input{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px 10px;font:inherit;height:40px;box-sizing:border-box}
 .purge p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 .purge-btns{display:flex;gap:8px}
@@ -227,12 +228,12 @@ li.shift{transition:transform .15s}
   <div class="toast" id="toast" hidden></div>
   <div class="tools" id="tools" hidden><button type="button" id="bdayOpen" class="bday-btn"><span aria-hidden="true">🎂</span> 생일관리</button><button type="button" id="purgeOpen">할일정리</button><button type="button" id="backup">백업저장</button><label class="restore">백업복원<input type="file" id="restoreFile" accept="application/json,.json" hidden></label></div>
   <div class="purge" id="purge" hidden>
+    <div class="bp-head"><b class="purge-title">할일정리</b><button type="button" class="bp-close" id="purgeClose" aria-label="닫기">×</button></div>
     <label for="purgeDate">이 날짜부터 이후 할 일을 모두 정리해요</label>
     <input type="date" id="purgeDate">
     <p id="purgeInfo"></p>
     <div class="purge-btns">
       <button type="button" class="danger" id="purgeGo">정리</button>
-      <button type="button" id="purgeCancel">취소</button>
     </div>
   </div>
   <div class="bday-panel" id="bdayPanel" hidden>
@@ -693,7 +694,7 @@ function endBdayEdit(){
 }
 $('bdayCancelEdit').onclick=endBdayEdit;
 $('bdayM').onchange=fillBdaySel;
-$('bdayOpen').onclick=()=>{fillBdaySel();drawBdays();$('bdayPanel').hidden=false;$('bdayPanel').scrollIntoView({behavior:'smooth',block:'nearest'});};
+$('bdayOpen').onclick=()=>{$('purge').hidden=true;fillBdaySel();drawBdays();$('bdayPanel').hidden=false;$('bdayPanel').scrollIntoView({behavior:'smooth',block:'nearest'});};
 $('bdayClose').onclick=()=>{endBdayEdit();$('bdayPanel').hidden=true;};
 $('bdayForm').addEventListener('submit',e=>{
   e.preventDefault();
@@ -726,9 +727,9 @@ function purgeInfo(){
   $('purgeInfo').append(lbl+'부터 정리돼요: '+(parts.join(', ')||'체크·별표 기록')+'. 그 전 날짜의 기록은 그대로 남아요. 되돌릴 수 없으니 필요하면 먼저 백업 저장을 해 두세요.');
   $('purgeGo').disabled=false;
 }
-$('purgeOpen').onclick=()=>{$('purgeDate').value=sel;$('purge').hidden=false;purgeInfo();$('purge').scrollIntoView({behavior:'smooth',block:'nearest'});};
+$('purgeOpen').onclick=()=>{if(typeof endBdayEdit==='function')endBdayEdit();$('bdayPanel').hidden=true;$('purgeDate').value=sel;$('purge').hidden=false;purgeInfo();$('purge').scrollIntoView({behavior:'smooth',block:'nearest'});};
 $('purgeDate').oninput=purgeInfo;
-$('purgeCancel').onclick=()=>{$('purge').hidden=true;};
+$('purgeClose').onclick=()=>{$('purge').hidden=true;};
 $('purgeGo').onclick=()=>{
   const from=$('purgeDate').value; if(!from) return;
   const p=purgePlan(from);
