@@ -344,6 +344,7 @@ const bdayDesc=b=>(b.lunar?'음력 ':'양력 ')+b.m+'.'+b.d;
 
 let lastSelDone=null;
 function render(){
+  if(!inUndo&&undoSnap) hideUndo(); // 다른 동작을 하면 되돌리기 줄을 닫음
   const g=$('grid'); g.innerHTML='';
   let cells=[];
   if(calMode==='week'){
@@ -647,10 +648,11 @@ function doBackup(){
 $('backup').onclick=doBackup;
 $('undoBtn').onclick=doUndo;
 /* 되돌리기 */
-let undoSnap=null, undoTimer=null;
+var undoSnap=null, undoTimer=null, inUndo=false;
+function hideUndo(){clearTimeout(undoTimer);undoSnap=null;const u=document.getElementById('undo');if(u)u.hidden=true;}
 function withUndo(msg,fn){
   const snap=JSON.stringify({days,routines,bdays});
-  const ret=fn();
+  inUndo=true; let ret; try{ret=fn();}finally{inUndo=false;}
   undoSnap=snap;
   $('undoText').textContent=ret||msg;
   $('toast').hidden=true;
@@ -659,7 +661,7 @@ function withUndo(msg,fn){
 }
 function doUndo(){
   if(!undoSnap) return;
-  const x=JSON.parse(undoSnap); undoSnap=null;
+  const x=JSON.parse(undoSnap); hideUndo();
   days=x.days; routines=x.routines; bdays=x.bdays||[];
   saveLocal(); asking=null; render();
   if(!$('bdayPanel').hidden) drawBdays();
