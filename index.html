@@ -365,8 +365,10 @@ const uid6=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const now=new Date(), TODAY=key(now);
 let view=new Date(now.getFullYear(),now.getMonth(),1);
 let sel=TODAY;
-let calMode='week';
-let tab='todo', meetings=[], mnotes={};
+/* 화면 설정 기억 (기기마다 따로) */
+const pref={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}}};
+let calMode=pref.get('pref-calMode')==='month'?'month':'week';
+let tab=pref.get('pref-tab')==='meet'?'meet':'todo', meetings=[], mnotes={};
 let days={};      // { "2026-11-10": {items:[{id,text,done}], rdone:{rid:true}, skip:[rid]} }
 let routines=[];  // [{id,text,wd:[0..6],start,end}]
 let col=null;
@@ -692,6 +694,7 @@ $('next').onclick=()=>moveBy(1);
 })();
 $('modeBtn').onclick=()=>{
   calMode=calMode==='week'?'month':'week';
+  pref.set('pref-calMode',calMode);
   if(calMode==='month'){const d=parse(sel);view=new Date(d.getFullYear(),d.getMonth(),1);}
   render();
 };
@@ -738,7 +741,7 @@ const fmtD=k=>{const d=parse(k);return (d.getMonth()+1)+'.'+d.getDate()+'('+WD[d
 const mk=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;};
 
 function setTab(t){
-  tab=t; asking=null;
+  tab=t; asking=null; pref.set('pref-tab',t);
   $('tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
   render();
 }
@@ -934,6 +937,7 @@ $('issueOpen').onclick=()=>{
 };
 $('issueClose').onclick=()=>{$('issuePanel').hidden=true;};
 
+$('tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===tab));
 drawWd(); render();
 useLocal('이 핸드폰에만 저장돼요. 가끔 백업해 두세요.');
 if('serviceWorker' in navigator){
