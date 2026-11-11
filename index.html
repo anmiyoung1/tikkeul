@@ -365,7 +365,7 @@ const uid6=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const now=new Date(), TODAY=key(now);
 let view=new Date(now.getFullYear(),now.getMonth(),1);
 let sel=TODAY;
-let calMode='month';
+let calMode='week';
 let tab='todo', meetings=[], mnotes={};
 let days={};      // { "2026-11-10": {items:[{id,text,done}], rdone:{rid:true}, skip:[rid]} }
 let routines=[];  // [{id,text,wd:[0..6],start,end}]
