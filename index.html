@@ -108,6 +108,7 @@ li.shift{transition:transform .15s}
 .impdot{position:absolute;top:4px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--imp)}
 .tag{flex:none;font-size:11px;font-weight:500;color:var(--rep);background:var(--rep-soft);border-radius:6px;padding:0 6px;white-space:nowrap}
 .impmark{color:var(--imp);margin-right:4px}
+.ask .ask-close{margin-left:auto;border:none;background:none;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 .ask .star-btn{color:var(--imp);border-color:var(--imp)}
 .del.armed{background:var(--imp-soft);color:var(--imp);font-weight:700}
 .ask-hint{font-size:12px;color:var(--muted)}
@@ -620,23 +621,23 @@ function item(o){
   del.onclick=o.onDel; li.appendChild(del);
   if(o.ask){
     const a=document.createElement('div');a.className='ask';
-    const eb=document.createElement('button');eb.type='button';eb.textContent='수정';eb.onclick=o.onEdit;
     const sb=document.createElement('button');sb.type='button';sb.className='star-btn';sb.textContent=o.imp?'☆ 꼭 해제':'★ 꼭';
     sb.onclick=()=>{asking=null;o.onStar();};
-    a.append(eb,sb);
+    a.append(sb);
     if(o.ask.it){
       const b1=document.createElement('button');b1.type='button';b1.textContent='내일로 넘기기';
       b1.onclick=()=>{asking=null;withUndo('',()=>carryOver(o.ask.it));};
       a.append(b1);
     } else {
       const r=o.ask.routine;
-      const b1=document.createElement('button');b1.type='button';b1.className='danger';b1.textContent='이 날부터 반복 끝내기';
-      b1.onclick=()=>{asking=null;withUndo('"'+r.text+'" 반복을 끝냈어요.',()=>{if(sel<=r.start) routines=routines.filter(x=>x!==r); else r.end=addDays(sel,-1);saveRoutines();});};
+      const b1=document.createElement('button');b1.type='button';b1.className='danger';b1.textContent='반복 끝내기';b1.title='이 날부터 반복 끝내기';
+      b1.onclick=()=>{asking=null;withUndo('"'+r.text+'" 반복을 이 날부터 끝냈어요.',()=>{if(sel<=r.start) routines=routines.filter(x=>x!==r); else r.end=addDays(sel,-1);saveRoutines();});};
       a.append(b1);
     }
-    const b3=document.createElement('button');b3.type='button';b3.textContent='취소';
+    const eb=document.createElement('button');eb.type='button';eb.textContent='수정';eb.onclick=o.onEdit;
+    const b3=document.createElement('button');b3.type='button';b3.className='ask-close';b3.textContent='취소';
     b3.onclick=()=>{asking=null;render();};
-    a.append(b3); li.appendChild(a);
+    a.append(eb,b3); li.appendChild(a);
   }
   return li;
 }
