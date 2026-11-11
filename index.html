@@ -92,6 +92,9 @@ ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 li{display:flex;align-items:center;gap:10px;padding:6px 2px;min-height:40px;box-sizing:border-box;border-top:1px solid var(--line);flex-wrap:wrap}
 li:first-child{border-top:none}
 li label{flex:1;min-width:0;display:flex;align-items:center;gap:10px;cursor:pointer;overflow-wrap:anywhere}
+li label.cbwrap{flex:none;padding:8px;margin:-8px -4px -8px -8px}
+li .tbtn{flex:1;min-width:0;cursor:pointer;overflow-wrap:anywhere;padding:4px 0;-webkit-tap-highlight-color:transparent}
+li .tbtn[aria-expanded="true"]{color:var(--accent)}
 li input[type=checkbox]{width:19px;height:19px;margin:0;accent-color:var(--done);flex:none}
 li.done .t{color:var(--muted);text-decoration:line-through}
 li.imp{background:var(--imp-soft);border-radius:8px;margin:1px 0}
@@ -502,7 +505,8 @@ function render(){
     rows.push({key,el:item({id:'r-'+r.id,text:r.text,done,imp,tag:label(r.wd),
       onCheck:v=>{const d=dayRec(sel);if(v)d.rdone[r.id]=true;else delete d.rdone[r.id];saveDay(sel);},
       onStar:()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else{d.rimp[r.id]=true;toTop(key);}saveDay(sel);},
-      onDel:twoStep(key,()=>withUndo('"'+r.text+'" 이 날에서 뺐어요.',()=>{const d=dayRec(sel);d.skip=[...(d.skip||[]),r.id];delete d.rdone[r.id];delete d.rimp[r.id];saveDay(sel);})),
+      onMenu:()=>{asking=asking===key?null:key;render();},
+      onDel:()=>{asking=null;withUndo('"'+r.text+'" 이 날에서 뺐어요.',()=>{const d=dayRec(sel);d.skip=[...(d.skip||[]),r.id];delete d.rdone[r.id];delete d.rimp[r.id];saveDay(sel);});},
       ask:asking===key?{routine:r}:null,
       editing:!!(editing&&editing.key===key&&editing.date===sel),
       onEdit:()=>{asking=null;editing={key,date:sel};render();},
@@ -513,7 +517,8 @@ function render(){
     rows.push({key,el:item({id:'i-'+it.id,text:it.text,done:!!it.done,imp:!!it.imp,
       onCheck:v=>{it.done=v;saveDay(sel);},
       onStar:()=>{it.imp=!it.imp;if(it.imp)toTop(key);saveDay(sel);},
-      onDel:twoStep(key,()=>withUndo('"'+it.text+'" 지웠어요.',()=>{const d=dayRec(sel);d.items=d.items.filter(x=>x!==it);saveDay(sel);})),
+      onMenu:()=>{asking=asking===key?null:key;render();},
+      onDel:()=>{asking=null;withUndo('"'+it.text+'" 지웠어요.',()=>{const d=dayRec(sel);d.items=d.items.filter(x=>x!==it);saveDay(sel);});},
       ask:asking===key?{it}:null,
       editing:!!(editing&&editing.key===key&&editing.date===sel),
       onEdit:()=>{asking=null;editing={key,date:sel};render();},
@@ -600,16 +605,18 @@ function item(o){
     setTimeout(()=>{inp.focus();try{inp.setSelectionRange(inp.value.length,inp.value.length);}catch(e){}},0);
     return li;
   }
-  const lb=document.createElement('label');
+  const lb=document.createElement('label');lb.className='cbwrap';lb.setAttribute('aria-label','완료');
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=o.done;cb.id='cb-'+o.id;
   cb.onchange=()=>o.onCheck(cb.checked);
-  const s=document.createElement('span');s.className='t';
+  lb.appendChild(cb); li.appendChild(lb);
+  const s=document.createElement('span');s.className='t tbtn';s.tabIndex=0;s.setAttribute('role','button');s.setAttribute('aria-expanded',!!o.ask);
   if(o.imp){const m=document.createElement('span');m.className='impmark';m.textContent='★';m.setAttribute('aria-label','꼭 할 일');s.appendChild(m);}
   s.append(o.text);
-  lb.append(cb,s); li.appendChild(lb);
+  s.onclick=o.onMenu; s.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();o.onMenu();}};
+  li.appendChild(s);
   if(o.tag){const g=document.createElement('span');g.className='tag';g.textContent=o.tag;li.appendChild(g);}
-  const del=document.createElement('button');del.type='button';del.className='del'+(o.ask?' armed':'');del.textContent='×';
-  del.setAttribute('aria-label',o.ask?'한 번 더 누르면 삭제':'삭제');del.title=o.ask?'한 번 더 누르면 삭제':'삭제';
+  const del=document.createElement('button');del.type='button';del.className='del';del.textContent='×';
+  del.setAttribute('aria-label',o.tag?'이 날에서 빼기':'삭제');del.title=o.tag?'이 날에서 빼기':'삭제';
   del.onclick=o.onDel; li.appendChild(del);
   if(o.ask){
     const a=document.createElement('div');a.className='ask';
@@ -629,8 +636,7 @@ function item(o){
     }
     const b3=document.createElement('button');b3.type='button';b3.textContent='취소';
     b3.onclick=()=>{asking=null;render();};
-    const h=document.createElement('span');h.className='ask-hint';h.textContent='× 한 번 더 누르면 삭제';
-    a.append(b3,h); li.appendChild(a);
+    a.append(b3); li.appendChild(a);
   }
   return li;
 }
