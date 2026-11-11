@@ -855,7 +855,7 @@ function drawSheet(){
   const c=$('mSheetBody'); c.innerHTML='';
   const m=meetings.find(x=>x.id===sheet.id); if(!m){closeSheet();return;}
   const k=sheet.k, nt=noteOf(m,k,true);
-  const head=mk('div','bp-head');head.appendChild(mk('b',null,'🕑 '+fmtD(k)+' 미팅'));
+  const head=mk('div','bp-head');head.appendChild(mk('b',null,'🕑 '+parse(k).getFullYear()+'.'+fmtD(k)+' 미팅'));
   const x=mk('button','bp-close','×');x.type='button';x.setAttribute('aria-label','닫기');x.onclick=closeSheet;head.appendChild(x);
   c.appendChild(head);
   c.appendChild(sfield('제목',sinput('text',m.title,'미팅 제목',v=>{if(v.trim())m.title=v.trim();})));
