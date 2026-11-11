@@ -184,6 +184,10 @@ li.shift{transition:transform .15s}
 .mform .wd button[aria-pressed="true"]{background:var(--meet-soft);border-color:var(--meet);color:var(--meet)}
 .mform-btns{display:flex;gap:8px}
 .mform-btns .add{background:var(--meet);height:40px;padding:0 18px}
+.edit-row{flex:1;min-width:0;display:flex;flex-direction:row;gap:6px;align-items:center}
+.edit-row input{flex:1;min-width:0;height:40px;box-sizing:border-box;border:1px solid var(--accent);background:var(--bg);color:var(--fg);border-radius:8px;padding:0 10px;font:inherit;font-size:14px}
+.edit-row .add{height:40px;padding:0 14px}
+.edit-hint{flex-basis:100%;padding-left:32px;font-size:12px;color:var(--muted)}
 .mcancel{height:40px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:0 14px;font:inherit;cursor:pointer}
 li.mcard{padding:8px 2px;align-items:flex-start}
 .mopen{flex:1;min-width:0;display:flex;gap:10px;background:none;border:none;text-align:left;font:inherit;color:var(--fg);cursor:pointer;padding:2px 0}
@@ -368,6 +372,7 @@ let routines=[];  // [{id,text,wd:[0..6],start,end}]
 let col=null;
 let mode='once', pickWd=[];
 let asking=null;  // 삭제 확인 중인 반복 id
+let editing=null;  // {key,date} 수정 중인 할 일
 const $=id=>document.getElementById(id);
 
 const dayRec=k=>{const d=days[k]||(days[k]={items:[],rdone:{},skip:[]});d.rimp=d.rimp||{};d.order=d.order||[];return d;};
@@ -465,7 +470,7 @@ function render(){
       c.className='cnt '+(t.done===t.total?'full':t.done>0?'part':'')+(k>TODAY?' future':'');
       c.textContent=t.done+'/'+t.total;b.appendChild(c);
     }
-    b.onclick=()=>{sel=k;view=new Date(dt.getFullYear(),dt.getMonth(),1);asking=null;lastSelDone=null;syncWd();render();};
+    b.onclick=()=>{sel=k;view=new Date(dt.getFullYear(),dt.getMonth(),1);asking=null;editing=null;lastSelDone=null;syncWd();render();};
     g.appendChild(b);
   }
   $('todoPanel').hidden=tab!=='todo'; $('meetPanel').hidden=tab!=='meet';
@@ -496,7 +501,10 @@ function render(){
       onCheck:v=>{const d=dayRec(sel);if(v)d.rdone[r.id]=true;else delete d.rdone[r.id];saveDay(sel);},
       onStar:()=>{const d=dayRec(sel);if(d.rimp[r.id])delete d.rimp[r.id];else{d.rimp[r.id]=true;toTop(key);}saveDay(sel);},
       onDel:twoStep(key,()=>withUndo('"'+r.text+'" 이 날에서 뺐어요.',()=>{const d=dayRec(sel);d.skip=[...(d.skip||[]),r.id];delete d.rdone[r.id];delete d.rimp[r.id];saveDay(sel);})),
-      ask:asking===key?{routine:r}:null})});
+      ask:asking===key?{routine:r}:null,
+      editing:!!(editing&&editing.key===key&&editing.date===sel),
+      onEdit:()=>{asking=null;editing={key,date:sel};render();},
+      onSave:v=>{editing=null;if(v&&v!==r.text){withUndo('"'+v+'"(으)로 고쳤어요.',()=>{r.text=v;saveRoutines();});}else render();}})});
   });
   t.d.items.forEach(it=>{
     const key='i:'+it.id;
@@ -504,7 +512,10 @@ function render(){
       onCheck:v=>{it.done=v;saveDay(sel);},
       onStar:()=>{it.imp=!it.imp;if(it.imp)toTop(key);saveDay(sel);},
       onDel:twoStep(key,()=>withUndo('"'+it.text+'" 지웠어요.',()=>{const d=dayRec(sel);d.items=d.items.filter(x=>x!==it);saveDay(sel);})),
-      ask:asking===key?{it}:null})});
+      ask:asking===key?{it}:null,
+      editing:!!(editing&&editing.key===key&&editing.date===sel),
+      onEdit:()=>{asking=null;editing={key,date:sel};render();},
+      onSave:v=>{editing=null;if(v&&v!==it.text){withUndo('"'+v+'"(으)로 고쳤어요.',()=>{it.text=v;saveDay(sel);});}else render();}})});
   });
   const ord=(t.d.order)||[];
   rows.forEach((r,i)=>{const p=ord.indexOf(r.key);r.pos=p<0?1e6+i:p;});
@@ -574,6 +585,19 @@ function item(o){
   const li=document.createElement('li'); li.className=(o.done?'done ':'')+(o.imp?'imp':'');
   const gr=document.createElement('span');gr.className='grip';gr.textContent='≡';gr.setAttribute('aria-label','끌어서 순서 바꾸기');gr.title='끌어서 순서 바꾸기';
   li.appendChild(gr);
+  if(o.editing){
+    const f=document.createElement('form');f.className='edit-row';
+    const inp=document.createElement('input');inp.type='text';inp.value=o.text;inp.maxLength=200;inp.id='edit-'+o.id;inp.setAttribute('aria-label','할 일 고치기');
+    const sv=document.createElement('button');sv.type='submit';sv.className='add';sv.textContent='저장';
+    const cn=document.createElement('button');cn.type='button';cn.className='mcancel';cn.textContent='취소';
+    cn.onclick=()=>{editing=null;render();};
+    inp.addEventListener('keydown',e=>{if(e.key==='Escape'){editing=null;render();}});
+    f.addEventListener('submit',e=>{e.preventDefault();o.onSave(inp.value.trim());});
+    f.append(inp,sv,cn); li.appendChild(f);
+    if(o.tag) li.appendChild(Object.assign(document.createElement('div'),{className:'edit-hint',textContent:'반복 할 일이에요. 고치면 모든 날짜에 함께 바뀌어요.'}));
+    setTimeout(()=>{inp.focus();try{inp.setSelectionRange(inp.value.length,inp.value.length);}catch(e){}},0);
+    return li;
+  }
   const lb=document.createElement('label');
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=o.done;cb.id='cb-'+o.id;
   cb.onchange=()=>o.onCheck(cb.checked);
@@ -587,9 +611,10 @@ function item(o){
   del.onclick=o.onDel; li.appendChild(del);
   if(o.ask){
     const a=document.createElement('div');a.className='ask';
+    const eb=document.createElement('button');eb.type='button';eb.textContent='수정';eb.onclick=o.onEdit;
     const sb=document.createElement('button');sb.type='button';sb.className='star-btn';sb.textContent=o.imp?'☆ 꼭 할 일 해제':'★ 꼭 할 일';
     sb.onclick=()=>{asking=null;o.onStar();};
-    a.append(sb);
+    a.append(eb,sb);
     if(o.ask.it){
       const b1=document.createElement('button');b1.type='button';b1.textContent='내일로 넘기기';
       b1.onclick=()=>{asking=null;withUndo('',()=>carryOver(o.ask.it));};
