@@ -621,7 +621,7 @@ function item(o){
   if(o.ask){
     const a=document.createElement('div');a.className='ask';
     const eb=document.createElement('button');eb.type='button';eb.textContent='수정';eb.onclick=o.onEdit;
-    const sb=document.createElement('button');sb.type='button';sb.className='star-btn';sb.textContent=o.imp?'☆ 꼭 할 일 해제':'★ 꼭 할 일';
+    const sb=document.createElement('button');sb.type='button';sb.className='star-btn';sb.textContent=o.imp?'☆ 꼭 해제':'★ 꼭';
     sb.onclick=()=>{asking=null;o.onStar();};
     a.append(eb,sb);
     if(o.ask.it){
