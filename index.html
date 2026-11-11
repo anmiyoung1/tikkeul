@@ -170,8 +170,8 @@ li.shift{transition:transform .15s}
 .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
 .tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:none;background:none;color:var(--muted);font:inherit;font-weight:600;font-size:14px;line-height:1.4;padding:5px 0;border-radius:9px;cursor:pointer}
 .tabs button .ti{font-size:15px;line-height:1;filter:grayscale(1);opacity:.55}
-.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
-.tabs button[data-t="meet"][aria-selected="true"]{background:var(--meet-soft);color:var(--meet)}
+.tabs button[aria-selected="true"]{background:linear-gradient(135deg,#1f7a6d,#2e9e5b);color:#fff;box-shadow:0 2px 8px rgba(31,122,109,.35)}
+.tabs button[data-t="meet"][aria-selected="true"]{background:linear-gradient(135deg,#2f63b8,#5a4fc4);color:#fff;box-shadow:0 2px 8px rgba(47,99,184,.35)}
 .tabs button[aria-selected="true"] .ti{filter:none;opacity:1}
 .mcnt{font-size:11px;font-weight:600;color:var(--meet);background:var(--meet-soft);border-radius:6px;padding:2px 5px;line-height:1;font-variant-numeric:tabular-nums}
 .m-add-toggle{height:40px;border:1px dashed var(--meet);background:none;color:var(--meet);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
