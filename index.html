@@ -206,6 +206,7 @@ li.mcard{padding:8px 2px;align-items:flex-start}
 .sheet-card{background:var(--surface);color:var(--fg);width:100%;max-width:560px;max-height:calc(100% - 32px - env(safe-area-inset-top,0px));overflow:auto;border-radius:18px 18px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-sizing:border-box;display:flex;flex-direction:column;gap:10px;font-size:14px}
 .sheet-card .bp-head b,#issuePanel .bp-head b{color:var(--fg)}
 .sf{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.sheet-end{align-self:flex-start;border:1px solid var(--imp);color:var(--imp);background:none;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .sec-title{font-weight:600;color:var(--meet);border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
 .sub-title{font-size:12px;color:var(--muted)}
 .ilist li.idone .t{text-decoration:line-through;color:var(--muted)}
@@ -784,11 +785,9 @@ function renderMeet(){
     if(nt.issues.length) sub.appendChild(mk('span',left?'iss-left':'iss-done',(bits.length?' · ':'')+'이슈 '+nt.issues.length+'개'+(left?' ('+left+'개 남음)':' (모두 해결)')));
     if(sub.textContent) bd.appendChild(sub);
     op.append(tc,bd); op.onclick=()=>openSheet(m.id,sel);
-    const del=mk('button','del'+(asking===key?' armed':''),'×');del.type='button';
-    del.setAttribute('aria-label',asking===key?'한 번 더 누르면 삭제':'삭제');
+    const del=mk('button','del','×');del.type='button';
+    del.setAttribute('aria-label',m.wd?'이 날에서 빼기':'삭제');del.title=m.wd?'이 날에서 빼기':'삭제';
     del.onclick=()=>{
-      if(asking!==key){asking=key;render();return;}
-      asking=null;
       const k=sel;
       withUndo('"'+m.title+'" 미팅을 '+(m.wd?'이 날에서 뺐어요.':'지웠어요.'),()=>{
         if(m.wd) m.skip=[...(m.skip||[]),k];
@@ -797,17 +796,6 @@ function renderMeet(){
       });
     };
     li.append(op,del);
-    if(asking===key){
-      const a=mk('div','ask');
-      if(m.wd){
-        const b1=mk('button','danger','이 날부터 반복 끝내기');b1.type='button';
-        b1.onclick=()=>{asking=null;const k=sel;withUndo('"'+m.title+'" 반복을 끝냈어요.',()=>{if(k<=m.start) meetings=meetings.filter(x=>x!==m); else m.end=addDays(k,-1);saveLocal();render();});};
-        a.appendChild(b1);
-      }
-      const b3=mk('button',null,'취소');b3.type='button';b3.onclick=()=>{asking=null;render();};
-      a.append(b3,mk('span','ask-hint','× 한 번 더 누르면 삭제'));
-      li.appendChild(a);
-    }
     ul.appendChild(li);
   });
 }
@@ -875,6 +863,11 @@ function drawSheet(){
   c.appendChild(sfield('시간',tr));
   c.appendChild(sfield('장소',sinput('text',m.place,'장소',v=>{m.place=v.trim();})));
   c.appendChild(sfield('내용',stext(m.memo,'안건, 준비할 것',v=>{m.memo=v;})));
+  if(m.wd){
+    const endB=mk('button','sheet-end','반복 끝내기');endB.type='button';endB.title='이 날부터 반복 끝내기';
+    endB.onclick=()=>{const t=m.title;closeSheet();withUndo('"'+t+'" 반복을 이 날부터 끝냈어요.',()=>{if(k<=m.start) meetings=meetings.filter(x=>x!==m); else m.end=addDays(k,-1);saveLocal();render();});};
+    c.appendChild(endB);
+  }
   if(m.wd) c.appendChild(mk('p','bp-note','반복되는 미팅이에요. 제목·시간·장소·내용은 모든 날짜에 함께 바뀌어요. 결정사항과 이슈는 날짜마다 따로 적어요.'));
   c.appendChild(mk('div','sec-title','회의 후 정리'));
   c.appendChild(sfield('결정사항',stext(nt.dec,'회의에서 정해진 것',v=>{nt.dec=v;})));
