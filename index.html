@@ -206,6 +206,7 @@ li.mcard{padding:8px 2px;align-items:flex-start}
 .sheet-card{background:var(--surface);color:var(--fg);width:100%;max-width:560px;max-height:calc(100% - 32px - env(safe-area-inset-top,0px));overflow:auto;border-radius:18px 18px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-sizing:border-box;display:flex;flex-direction:column;gap:10px;font-size:14px}
 .sheet-card .bp-head b,#issuePanel .bp-head b{color:var(--fg)}
 .sf{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.sheet-card textarea.memo-ta{height:65px;min-height:0}
 .sheet-end{align-self:flex-start;border:1px solid var(--imp);color:var(--imp);background:none;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .sec-title{font-weight:600;color:var(--meet);border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
 .sub-title{font-size:12px;color:var(--muted)}
@@ -862,7 +863,7 @@ function drawSheet(){
   tr.append(sinput('time',m.from,'',v=>{m.from=v;}),mk('span',null,'~'),sinput('time',m.to,'',v=>{m.to=v;}));
   c.appendChild(sfield('시간',tr));
   c.appendChild(sfield('장소',sinput('text',m.place,'장소',v=>{m.place=v.trim();})));
-  c.appendChild(sfield('내용',stext(m.memo,'안건, 준비할 것',v=>{m.memo=v;})));
+  {const mt=stext(m.memo,'안건, 준비할 것',v=>{m.memo=v;});mt.className='memo-ta';c.appendChild(sfield('내용',mt));}
   if(m.wd){
     const endB=mk('button','sheet-end','반복 끝내기');endB.type='button';endB.title='이 날부터 반복 끝내기';
     endB.onclick=()=>{const t=m.title;closeSheet();withUndo('"'+t+'" 반복을 이 날부터 끝냈어요.',()=>{if(k<=m.start) meetings=meetings.filter(x=>x!==m); else m.end=addDays(k,-1);saveLocal();render();});};
